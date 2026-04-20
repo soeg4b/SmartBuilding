@@ -735,8 +735,9 @@ export default function DigitalTwinPage() {
   const [editLayout, setEditLayout] = useState(false);
   const [pendingPlacement, setPendingPlacement] = useState<{ x: number; y: number } | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<IotDevice | null>(null);
-  const [editDevice, setEditDevice] = useState<IotDevice | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [positionNotice, setPositionNotice] = useState<string | null>(null);
+  const positionNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cadAreaRef = useRef<HTMLDivElement>(null);
 
   const formatBytes = (bytes: number) => {
@@ -810,11 +811,19 @@ export default function DigitalTwinPage() {
       .then(r => { setIotDevices(r.data); setIotMeta(r.meta); })
       .catch(() => {});
   }, []);
+  // Pause polling while actively dragging to avoid state reset
   useEffect(() => {
     fetchIot();
+    if (draggingId) return; // skip poll interval while dragging
     const iv = setInterval(fetchIot, 5000);
     return () => clearInterval(iv);
-  }, [fetchIot]);
+  }, [fetchIot, draggingId]);
+
+  useEffect(() => () => {
+    if (positionNoticeTimerRef.current) {
+      clearTimeout(positionNoticeTimerRef.current);
+    }
+  }, []);
 
   const handleCadClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!placeMode || !cadAreaRef.current) return;
@@ -849,31 +858,19 @@ export default function DigitalTwinPage() {
     }
   }, []);
 
-  const updateDevice = useCallback(async (id: string, patch: Partial<Pick<IotDevice, 'x' | 'y' | 'label' | 'floorId' | 'zoneId'>>) => {
-    try {
-      const res = await api.patch<{ data: IotDevice }>(`/digital-twin/iot-devices/${id}`, patch);
-      setIotDevices(prev => prev.map(d => d.id === id ? { ...d, ...res.data } : d));
-      setEditDevice(null);
-      if (selectedDevice?.id === id) setSelectedDevice(res.data);
-    } catch (err: any) {
-      alert(err?.message || 'Failed to update device');
-      // Revert by refetching
-      fetchIot();
-    }
-  }, [selectedDevice, fetchIot]);
-
   // Drag handler for repositioning markers in edit mode
+  // Uses window-level listeners for reliable cross-browser drag-and-drop
   const beginDrag = useCallback((e: React.PointerEvent<HTMLDivElement>, device: IotDevice) => {
     if (!editLayout || !cadAreaRef.current) return;
     e.preventDefault();
     e.stopPropagation();
     setDraggingId(device.id);
+    setSelectedDevice(null); // close popover while dragging
     const area = cadAreaRef.current;
-    const target = e.currentTarget;
-    target.setPointerCapture(e.pointerId);
     let lastX = device.x;
     let lastY = device.y;
-    const onMove = (ev: PointerEvent) => {
+    const onMove = (ev: MouseEvent | PointerEvent) => {
+      ev.preventDefault();
       const rect = area.getBoundingClientRect();
       const nx = Math.max(0, Math.min(100, ((ev.clientX - rect.left) / rect.width) * 100));
       const ny = Math.max(0, Math.min(100, ((ev.clientY - rect.top) / rect.height) * 100));
@@ -882,20 +879,25 @@ export default function DigitalTwinPage() {
       setIotDevices(prev => prev.map(d => d.id === device.id ? { ...d, x: lastX, y: lastY } : d));
     };
     const onUp = async () => {
-      target.removeEventListener('pointermove', onMove as any);
-      target.removeEventListener('pointerup', onUp as any);
-      target.removeEventListener('pointercancel', onUp as any);
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
       setDraggingId(null);
+      if (lastX === device.x && lastY === device.y) return; // no move
       try {
-        await api.patch(`/digital-twin/iot-devices/${device.id}`, { x: lastX, y: lastY });
+        const res = await api.patch<{ data: IotDevice }>(`/digital-twin/iot-devices/${device.id}`, { x: lastX, y: lastY });
+        setIotDevices(prev => prev.map(d => d.id === device.id ? { ...d, ...res.data } : d));
+        setPositionNotice(`\u2713 Position saved — ${res.data.label}`);
+        if (positionNoticeTimerRef.current) clearTimeout(positionNoticeTimerRef.current);
+        positionNoticeTimerRef.current = setTimeout(() => setPositionNotice(null), 2000);
       } catch (err: any) {
         alert(err?.message || 'Failed to save new position');
         fetchIot();
       }
     };
-    target.addEventListener('pointermove', onMove as any);
-    target.addEventListener('pointerup', onUp as any);
-    target.addEventListener('pointercancel', onUp as any);
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
   }, [editLayout, fetchIot]);
 
   const visibleDevices = iotDevices.filter(d => iotFloorFilter === 'all' || d.floorId === iotFloorFilter);
@@ -1047,7 +1049,7 @@ export default function DigitalTwinPage() {
                 </div>
               ) : sourceSvg ? (
                 <div
-                  className="w-full h-full flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&_*]:!stroke-slate-200 [&_*]:!fill-none"
+                  className="w-full h-full flex items-center justify-center pointer-events-none [&>svg]:w-full [&>svg]:h-full [&_*]:!stroke-slate-200 [&_*]:!fill-none"
                   dangerouslySetInnerHTML={{ __html: sourceSvg }}
                 />
               ) : (
@@ -1227,17 +1229,6 @@ export default function DigitalTwinPage() {
           isAdmin={isAdmin}
           onClose={() => setSelectedDevice(null)}
           onDelete={() => removeDevice(selectedDevice.id)}
-          onEdit={() => { setEditDevice(selectedDevice); setSelectedDevice(null); }}
-        />
-      )}
-
-      {/* Edit IoT Modal */}
-      {editDevice && iotMeta && (
-        <IotEditModal
-          device={editDevice}
-          meta={iotMeta}
-          onCancel={() => setEditDevice(null)}
-          onSubmit={(patch) => updateDevice(editDevice.id, patch)}
         />
       )}
 
@@ -1251,6 +1242,12 @@ export default function DigitalTwinPage() {
           onSubmit={createDevice}
         />
       )}
+
+      {positionNotice && (
+        <div className="fixed top-20 right-6 z-50 px-3 py-2 rounded-lg border border-emerald-400/40 bg-emerald-500/20 text-emerald-100 text-xs shadow-lg">
+          {positionNotice}
+        </div>
+      )}
     </div>
   );
 }
@@ -1259,13 +1256,12 @@ export default function DigitalTwinPage() {
 // ─── IoT Device Popover ─────────────────────────────────────────────────────
 
 function IotDevicePopover({
-  device, isAdmin, onClose, onDelete, onEdit,
+  device, isAdmin, onClose, onDelete,
 }: {
   device: IotDevice;
   isAdmin: boolean;
   onClose: () => void;
   onDelete: () => void;
-  onEdit: () => void;
 }) {
   const Icon = iotIcon(device.type);
   const c = iotStatusColor(device.status);
@@ -1312,12 +1308,6 @@ function IotDevicePopover({
 
         {isAdmin && (
           <div className="mt-3 flex justify-end gap-2">
-            <button
-              onClick={onEdit}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-500/25"
-            >
-              <Move className="h-3.5 w-3.5" /> Edit
-            </button>
             <button
               onClick={onDelete}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-300 hover:bg-red-500/25"
@@ -1443,128 +1433,3 @@ function IotPlaceModal({
   );
 }
 
-function IotEditModal({
-  device, meta, onCancel, onSubmit,
-}: {
-  device: IotDevice;
-  meta: IotMeta;
-  onCancel: () => void;
-  onSubmit: (patch: { x?: number; y?: number; label?: string; floorId?: string; zoneId?: string | null }) => void;
-}) {
-  const [label, setLabel] = useState(device.label);
-  const [floorId, setFloorId] = useState(device.floorId);
-  const [zoneId, setZoneId] = useState<string>(device.zoneId ?? '');
-  const [x, setX] = useState<string>(String(device.x));
-  const [y, setY] = useState<string>(String(device.y));
-  const zonesForFloor = meta.zones.filter(z => z.floorId === floorId);
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onCancel}>
-      <div
-        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-5"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
-            <Move className="h-4 w-4 text-cyan-400" /> Edit IoT Device
-          </h3>
-          <button onClick={onCancel} className="p-1 rounded hover:bg-slate-800 text-slate-400">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="text-[11px] text-slate-500 mb-3">
-          Tip: you can also drag the marker on the drawing while &quot;Edit Layout&quot; is on.
-        </div>
-
-        <div className="space-y-3">
-          <label className="block">
-            <span className="text-xs text-slate-400">Label</span>
-            <input
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              maxLength={80}
-              className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100"
-            />
-          </label>
-
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <span className="text-xs text-slate-400">X (%)</span>
-              <input
-                type="number" min={0} max={100} step={0.1}
-                value={x}
-                onChange={(e) => setX(e.target.value)}
-                className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100 font-mono"
-              />
-            </label>
-            <label className="block">
-              <span className="text-xs text-slate-400">Y (%)</span>
-              <input
-                type="number" min={0} max={100} step={0.1}
-                value={y}
-                onChange={(e) => setY(e.target.value)}
-                className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100 font-mono"
-              />
-            </label>
-          </div>
-
-          <label className="block">
-            <span className="text-xs text-slate-400">Floor</span>
-            <select
-              value={floorId}
-              onChange={(e) => { setFloorId(e.target.value); setZoneId(''); }}
-              className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100"
-            >
-              {meta.floors.map(f => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-xs text-slate-400">Zone (optional)</span>
-            <select
-              value={zoneId}
-              onChange={(e) => setZoneId(e.target.value)}
-              className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100"
-            >
-              <option value="">— None —</option>
-              {zonesForFloor.map(z => (
-                <option key={z.id} value={z.id}>{z.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="px-3 py-1.5 rounded-lg text-xs text-slate-300 bg-slate-800 border border-slate-700 hover:bg-slate-700"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => {
-              const nx = Number(x);
-              const ny = Number(y);
-              if (!Number.isFinite(nx) || nx < 0 || nx > 100) { alert('X must be between 0 and 100'); return; }
-              if (!Number.isFinite(ny) || ny < 0 || ny > 100) { alert('Y must be between 0 and 100'); return; }
-              if (!label.trim()) { alert('Label is required'); return; }
-              onSubmit({
-                label: label.trim(),
-                floorId,
-                zoneId: zoneId || null,
-                x: Number(nx.toFixed(2)),
-                y: Number(ny.toFixed(2)),
-              });
-            }}
-            className="px-3 py-1.5 rounded-lg text-xs text-white bg-cyan-600 hover:bg-cyan-500 flex items-center gap-1.5"
-          >
-            <Move className="h-3.5 w-3.5" /> Save
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
