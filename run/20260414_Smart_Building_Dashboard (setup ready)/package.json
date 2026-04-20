@@ -1,0 +1,35 @@
+{
+  "name": "smart-building-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Strategic Smart Building Dashboard — Real-time IoT monitoring for energy, environment, and asset management",
+  "workspaces": [
+    "src/backend",
+    "src/frontend",
+    "src/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev:backend": "npm -w src/backend run dev",
+    "dev:frontend": "npm -w src/frontend run dev",
+    "dev:mobile": "cd src/mobile && npx expo start",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "build:shared": "npm -w src/shared run build",
+    "build:backend": "npm -w src/backend run build",
+    "build:frontend": "npm -w src/frontend run build",
+    "start": "npm run start:backend & npm run start:frontend",
+    "start:backend": "npm -w src/backend run start",
+    "start:frontend": "npm -w src/frontend run start",
+    "db:migrate": "npx prisma migrate deploy --schema=src/database/schema.prisma",
+    "db:generate": "npx prisma generate --schema=src/database/schema.prisma",
+    "db:seed": "npx ts-node src/database/seed.ts",
+    "db:studio": "npx prisma studio --schema=src/database/schema.prisma",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "UNLICENSED"
+}

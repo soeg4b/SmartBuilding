@@ -1,0 +1,532 @@
+// ============================================================================
+// Smart Building Dashboard — Prisma Schema
+// Database: PostgreSQL + TimescaleDB extension
+// Generated: 2026-04-14 | Stage 5 — Data Agent
+// ============================================================================
+//
+// IMPORTANT: TimescaleDB hypertables, continuous aggregates, retention policies,
+// and compression policies MUST be applied via raw SQL migrations AFTER Prisma
+// migrate. See: src/database/migrations/timescaledb-setup.sql
+//
+// Prisma does NOT natively support TimescaleDB features. The sensor_readings
+// and equipment_metrics tables are defined here for type generation, but their
+// hypertable conversion is done in raw SQL.
+// ============================================================================
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  financial_decision_maker
+  sys_admin
+  technician
+}
+
+enum SensorType {
+  temperature
+  humidity
+  co2
+  energy_meter
+  power_factor
+  fuel_level
+  vibration
+  runtime
+}
+
+enum SensorStatus {
+  online
+  offline
+  stale
+}
+
+enum ReadingQuality {
+  good
+  suspect
+  bad
+}
+
+enum EquipmentType {
+  genset
+  pump
+  ahu
+  chiller
+  boiler
+  elevator
+  transformer
+}
+
+enum HealthStatus {
+  green
+  yellow
+  red
+}
+
+enum AlertOperator {
+  gt  @map(">")
+  lt  @map("<")
+  gte @map(">=")
+  lte @map("<=")
+  eq  @map("==")
+}
+
+enum AlertSeverity {
+  info
+  warning
+  critical
+}
+
+enum AlertStatus {
+  active
+  acknowledged
+  resolved
+}
+
+enum FloorPlanFileType {
+  svg
+  png
+}
+
+enum ZoneType {
+  office
+  corridor
+  server_room
+  conference_room
+  lobby
+  restroom
+  storage
+  mechanical
+  parking
+  other
+}
+
+enum EquipmentMetricType {
+  running_hours
+  cycle_count
+  fuel_level
+  operating_hours
+}
+
+// ============================================================================
+// CORE IDENTITY & ACCESS
+// ============================================================================
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar(255)
+  name          String    @db.VarChar(255)
+  role          UserRole
+  buildingId    String?   @map("building_id") @db.Uuid
+  isActive      Boolean   @default(true) @map("is_active")
+  lastLoginAt   DateTime? @map("last_login_at") @db.Timestamptz()
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  building              Building?       @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  refreshTokens         RefreshToken[]
+  createdAlertRules     AlertRule[]     @relation("AlertRuleCreator")
+  acknowledgedAlerts    Alert[]         @relation("AlertAcknowledger")
+  resolvedAlerts        Alert[]         @relation("AlertResolver")
+  notifications         Notification[]
+  uploadedFloorPlans    FloorPlan[]     @relation("FloorPlanUploader")
+  createdEnergyTariffs  EnergyTariff[]  @relation("TariffCreator")
+  auditLogs             AuditLog[]
+
+  @@index([buildingId, role], map: "idx_users_building_role")
+  @@index([email], map: "idx_users_email")
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  tokenHash String    @map("token_hash") @db.VarChar(255)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz()
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz()
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "idx_refresh_tokens_user")
+  @@index([tokenHash], map: "idx_refresh_tokens_hash")
+  @@map("refresh_tokens")
+}
+
+// ============================================================================
+// BUILDING HIERARCHY
+// ============================================================================
+
+model Building {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(255)
+  address   String?  @db.Text
+  city      String?  @db.VarChar(100)
+  timezone  String   @default("Asia/Jakarta") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  users          User[]
+  floors         Floor[]
+  sensors        Sensor[]
+  equipment      Equipment[]
+  alertRules     AlertRule[]
+  alerts         Alert[]
+  floorPlans     FloorPlan[]
+  energyTariffs  EnergyTariff[]
+  auditLogs      AuditLog[]
+
+  @@map("buildings")
+}
+
+model Floor {
+  id         String   @id @default(uuid()) @db.Uuid
+  buildingId String   @map("building_id") @db.Uuid
+  name       String   @db.VarChar(100)
+  level      Int
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  building   Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  zones      Zone[]
+  floorPlans FloorPlan[]
+  equipment  Equipment[]
+
+  @@index([buildingId, sortOrder], map: "idx_floors_building_sort")
+  @@map("floors")
+}
+
+model Zone {
+  id          String    @id @default(uuid()) @db.Uuid
+  floorId     String    @map("floor_id") @db.Uuid
+  name        String    @db.VarChar(100)
+  type        ZoneType? @default(other)
+  tempMin     Decimal   @default(20.00) @map("temp_min") @db.Decimal(5, 2)
+  tempMax     Decimal   @default(26.00) @map("temp_max") @db.Decimal(5, 2)
+  humidityMin Decimal   @default(40.00) @map("humidity_min") @db.Decimal(5, 2)
+  humidityMax Decimal   @default(60.00) @map("humidity_max") @db.Decimal(5, 2)
+  co2Max      Int       @default(800) @map("co2_max")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  floor     Floor       @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  sensors   Sensor[]
+  equipment Equipment[]
+
+  @@index([floorId], map: "idx_zones_floor")
+  @@map("zones")
+}
+
+// ============================================================================
+// SENSORS & TIME-SERIES
+// ============================================================================
+
+model Sensor {
+  id         String       @id @default(uuid()) @db.Uuid
+  buildingId String       @map("building_id") @db.Uuid
+  zoneId     String?      @map("zone_id") @db.Uuid
+  name       String       @db.VarChar(255)
+  type       SensorType
+  unit       String       @db.VarChar(20)
+  mqttTopic  String       @unique @map("mqtt_topic") @db.VarChar(500)
+  status     SensorStatus @default(offline)
+  lastSeenAt DateTime?    @map("last_seen_at") @db.Timestamptz()
+  metadata   Json         @default("{}") @db.JsonB
+  isActive   Boolean      @default(true) @map("is_active")
+  createdAt  DateTime     @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime     @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  building         Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  zone             Zone?             @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  sensorReadings   SensorReading[]
+  equipmentSensors EquipmentSensor[]
+  sensorPlacements SensorPlacement[]
+  alertRules       AlertRule[]
+  alerts           Alert[]
+
+  @@index([buildingId, type], map: "idx_sensors_building_type")
+  @@index([buildingId, status], map: "idx_sensors_building_status")
+  @@index([mqttTopic], map: "idx_sensors_mqtt_topic")
+  @@map("sensors")
+}
+
+/// TimescaleDB hypertable — requires raw SQL migration:
+/// SELECT create_hypertable('sensor_readings', 'time', chunk_time_interval => INTERVAL '1 day');
+/// Composite primary key (sensor_id, time) enforced via raw SQL, not Prisma.
+model SensorReading {
+  time     DateTime       @map("time") @db.Timestamptz()
+  sensorId String         @map("sensor_id") @db.Uuid
+  value    Float          @db.DoublePrecision
+  quality  ReadingQuality @default(good)
+
+  // Relations
+  sensor Sensor @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@id([sensorId, time])
+  @@index([sensorId, time(sort: Desc)], map: "idx_readings_sensor_time")
+  @@map("sensor_readings")
+}
+
+model DeadLetterQueue {
+  id          BigInt   @id @default(autoincrement())
+  topic       String?  @db.VarChar(500)
+  payload     String?  @db.Text
+  errorReason String?  @map("error_reason") @db.VarChar(500)
+  receivedAt  DateTime @default(now()) @map("received_at") @db.Timestamptz()
+
+  @@index([receivedAt(sort: Desc)], map: "idx_dlq_received_at")
+  @@map("dead_letter_queue")
+}
+
+// ============================================================================
+// EQUIPMENT & METRICS
+// ============================================================================
+
+model Equipment {
+  id              String        @id @default(uuid()) @db.Uuid
+  buildingId      String        @map("building_id") @db.Uuid
+  floorId         String?       @map("floor_id") @db.Uuid
+  zoneId          String?       @map("zone_id") @db.Uuid
+  name            String        @db.VarChar(255)
+  type            EquipmentType
+  serialNumber    String?       @map("serial_number") @db.VarChar(100)
+  manufacturer    String?       @db.VarChar(255)
+  model           String?       @db.VarChar(255)
+  installDate     DateTime?     @map("install_date") @db.Date
+  lastServiceDate DateTime?     @map("last_service_date") @db.Date
+  nextServiceDate DateTime?     @map("next_service_date") @db.Date
+  healthStatus    HealthStatus  @default(green) @map("health_status")
+  metadata        Json          @default("{}") @db.JsonB
+  isActive        Boolean       @default(true) @map("is_active")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  building         Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  floor            Floor?            @relation(fields: [floorId], references: [id], onDelete: SetNull)
+  zone             Zone?             @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  equipmentSensors EquipmentSensor[]
+  equipmentMetrics EquipmentMetric[]
+
+  @@index([buildingId, type, healthStatus], map: "idx_equipment_building_type_health")
+  @@index([buildingId, isActive], map: "idx_equipment_building_active")
+  @@map("equipment")
+}
+
+model EquipmentSensor {
+  equipmentId String  @map("equipment_id") @db.Uuid
+  sensorId    String  @map("sensor_id") @db.Uuid
+  role        String? @db.VarChar(50)
+
+  // Relations
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  sensor    Sensor    @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@id([equipmentId, sensorId])
+  @@map("equipment_sensors")
+}
+
+/// TimescaleDB hypertable — requires raw SQL migration:
+/// SELECT create_hypertable('equipment_metrics', 'time', chunk_time_interval => INTERVAL '1 day');
+model EquipmentMetric {
+  time        DateTime            @map("time") @db.Timestamptz()
+  equipmentId String              @map("equipment_id") @db.Uuid
+  metricType  EquipmentMetricType @map("metric_type")
+  value       Float               @db.DoublePrecision
+
+  // Relations
+  equipment Equipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+
+  @@id([equipmentId, metricType, time])
+  @@index([equipmentId, time(sort: Desc)], map: "idx_equip_metrics_equip_time")
+  @@map("equipment_metrics")
+}
+
+// ============================================================================
+// ALERTS & NOTIFICATIONS
+// ============================================================================
+
+model AlertRule {
+  id                String        @id @default(uuid()) @db.Uuid
+  buildingId        String        @map("building_id") @db.Uuid
+  name              String        @db.VarChar(255)
+  sensorType        SensorType?   @map("sensor_type")
+  sensorId          String?       @map("sensor_id") @db.Uuid
+  operator          AlertOperator
+  threshold         Float         @db.DoublePrecision
+  severity          AlertSeverity
+  cooldownMinutes   Int           @default(15) @map("cooldown_minutes")
+  emailNotification Boolean       @default(false) @map("email_notification")
+  emailRecipients   Json          @default("[]") @map("email_recipients") @db.JsonB
+  isActive          Boolean       @default(true) @map("is_active")
+  createdBy         String?       @map("created_by") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  building Building  @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  sensor   Sensor?   @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  creator  User?     @relation("AlertRuleCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  alerts   Alert[]
+
+  @@index([buildingId, isActive], map: "idx_alert_rules_building_active")
+  @@index([sensorType, isActive], map: "idx_alert_rules_type_active")
+  @@index([sensorId, isActive], map: "idx_alert_rules_sensor_active")
+  @@map("alert_rules")
+}
+
+model Alert {
+  id              String        @id @default(uuid()) @db.Uuid
+  alertRuleId     String?       @map("alert_rule_id") @db.Uuid
+  buildingId      String        @map("building_id") @db.Uuid
+  sensorId        String?       @map("sensor_id") @db.Uuid
+  severity        AlertSeverity
+  status          AlertStatus   @default(active)
+  sensorValue     Float?        @map("sensor_value") @db.DoublePrecision
+  thresholdValue  Float?        @map("threshold_value") @db.DoublePrecision
+  operator        String?       @db.VarChar(5)
+  message         String        @db.Text
+  triggeredAt     DateTime      @default(now()) @map("triggered_at") @db.Timestamptz()
+  acknowledgedAt  DateTime?     @map("acknowledged_at") @db.Timestamptz()
+  acknowledgedBy  String?       @map("acknowledged_by") @db.Uuid
+  resolvedAt      DateTime?     @map("resolved_at") @db.Timestamptz()
+  resolvedBy      String?       @map("resolved_by") @db.Uuid
+  comment         String?       @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  alertRule    AlertRule?     @relation(fields: [alertRuleId], references: [id], onDelete: SetNull)
+  building     Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  sensor       Sensor?        @relation(fields: [sensorId], references: [id], onDelete: SetNull)
+  acknowledger User?          @relation("AlertAcknowledger", fields: [acknowledgedBy], references: [id], onDelete: SetNull)
+  resolver     User?          @relation("AlertResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  notifications Notification[]
+
+  @@index([buildingId, status, severity], map: "idx_alerts_building_status_severity")
+  @@index([triggeredAt(sort: Desc)], map: "idx_alerts_triggered_at")
+  @@index([sensorId, triggeredAt(sort: Desc)], map: "idx_alerts_sensor_triggered")
+  @@map("alerts")
+}
+
+model Notification {
+  id        String        @id @default(uuid()) @db.Uuid
+  userId    String        @map("user_id") @db.Uuid
+  alertId   String?       @map("alert_id") @db.Uuid
+  title     String        @db.VarChar(255)
+  message   String        @db.Text
+  severity  AlertSeverity?
+  isRead    Boolean       @default(false) @map("is_read")
+  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alert Alert? @relation(fields: [alertId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt(sort: Desc)], map: "idx_notifications_user_read")
+  @@map("notifications")
+}
+
+// ============================================================================
+// SPATIAL — FLOOR PLANS & SENSOR PLACEMENT
+// ============================================================================
+
+model FloorPlan {
+  id         String            @id @default(uuid()) @db.Uuid
+  buildingId String            @map("building_id") @db.Uuid
+  floorId    String            @map("floor_id") @db.Uuid
+  label      String?           @db.VarChar(255)
+  fileType   FloorPlanFileType @map("file_type")
+  filePath   String            @map("file_path") @db.VarChar(500)
+  fileSize   Int?              @map("file_size")
+  uploadedBy String?           @map("uploaded_by") @db.Uuid
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime          @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  building         Building          @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  floor            Floor             @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  uploader         User?             @relation("FloorPlanUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+  sensorPlacements SensorPlacement[]
+
+  @@index([buildingId, floorId], map: "idx_floor_plans_building_floor")
+  @@map("floor_plans")
+}
+
+model SensorPlacement {
+  id          String   @id @default(uuid()) @db.Uuid
+  floorPlanId String   @map("floor_plan_id") @db.Uuid
+  sensorId    String   @map("sensor_id") @db.Uuid
+  x           Decimal  @db.Decimal(6, 3)
+  y           Decimal  @db.Decimal(6, 3)
+  rotation    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // Relations
+  floorPlan FloorPlan @relation(fields: [floorPlanId], references: [id], onDelete: Cascade)
+  sensor    Sensor    @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+
+  @@unique([floorPlanId, sensorId], map: "uq_placement_plan_sensor")
+  @@map("sensor_placements")
+}
+
+// ============================================================================
+// CONFIGURATION & AUDIT
+// ============================================================================
+
+model EnergyTariff {
+  id            String    @id @default(uuid()) @db.Uuid
+  buildingId    String    @map("building_id") @db.Uuid
+  name          String    @db.VarChar(100)
+  ratePerKwh    Decimal   @map("rate_per_kwh") @db.Decimal(12, 2)
+  currency      String    @default("IDR") @db.VarChar(3)
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+  createdBy     String?   @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  creator  User?    @relation("TariffCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+
+  @@index([buildingId, effectiveFrom(sort: Desc)], map: "idx_tariffs_building_effective")
+  @@map("energy_tariffs")
+}
+
+model AuditLog {
+  id           BigInt   @id @default(autoincrement())
+  userId       String?  @map("user_id") @db.Uuid
+  buildingId   String?  @map("building_id") @db.Uuid
+  action       String   @db.VarChar(100)
+  resourceType String   @map("resource_type") @db.VarChar(50)
+  resourceId   String?  @map("resource_id") @db.Uuid
+  details      Json?    @db.JsonB
+  ipAddress    String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.VarChar(500)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  // Relations
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  building Building? @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_audit_user")
+  @@index([resourceType, resourceId, createdAt(sort: Desc)], map: "idx_audit_resource")
+  @@index([buildingId, createdAt(sort: Desc)], map: "idx_audit_building")
+  @@map("audit_logs")
+}

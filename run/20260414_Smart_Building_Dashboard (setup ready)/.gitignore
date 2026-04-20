@@ -1,0 +1,74 @@
+# =============================================================================
+# Smart Building Dashboard — .gitignore
+# =============================================================================
+
+# --- Dependencies ---
+node_modules/
+.pnp
+.pnp.js
+
+# --- Build outputs ---
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# --- Environment ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- Prisma ---
+src/database/migrations/*.sql.bak
+
+# --- Testing ---
+coverage/
+test-results/
+playwright-report/
+blob-report/
+*.lcov
+
+# --- IDE ---
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# --- OS files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- Uploads (runtime data) ---
+uploads/
+!uploads/.gitkeep
+
+# --- Runtime ---
+*.pid
+*.seed
+*.pid.lock
+
+# --- Debug ---
+.node_repl_history
