@@ -148,11 +148,18 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
   const { vertical, setVertical, definition } = useVertical();
 
   const isTenantView = user?.role === 'tenant' || user?.role === 'guest';
+  const isAdmin = user?.role === 'sys_admin';
   const sections = isTenantView ? buildTenantSections() : buildSections(vertical);
 
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={onClose} />}
+      {open && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
 
       <aside
         className={clsx(
@@ -176,23 +183,26 @@ export default function AppSidebar({ open, onClose }: AppSidebarProps) {
                 {definition.shortLabel}
               </div>
             </div>
-            <div className="mt-2 grid grid-cols-3 gap-1">
-              {VERTICALS.map((v) => (
-                <button
-                  key={v.id}
-                  onClick={() => setVertical(v.id)}
-                  title={v.label}
-                  className={clsx(
-                    'text-[10px] font-semibold px-1.5 py-1.5 rounded-md transition-colors',
-                    vertical === v.id
-                      ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
-                      : 'bg-slate-700/40 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
-                  )}
-                >
-                  {v.shortLabel}
-                </button>
-              ))}
-            </div>
+            {/* Only admin can switch verticals manually */}
+            {isAdmin && (
+              <div className="mt-2 grid grid-cols-3 gap-1">
+                {VERTICALS.map((v) => (
+                  <button
+                    key={v.id}
+                    onClick={() => setVertical(v.id)}
+                    title={v.label}
+                    className={clsx(
+                      'text-[10px] font-semibold px-1.5 py-1.5 rounded-md transition-colors',
+                      vertical === v.id
+                        ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                        : 'bg-slate-700/40 text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+                    )}
+                  >
+                    {v.shortLabel}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

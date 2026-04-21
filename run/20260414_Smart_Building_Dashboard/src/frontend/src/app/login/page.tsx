@@ -115,8 +115,10 @@ function LoginForm() {
         {/* Demo accounts */}
         <div className="mt-6 card">
           <p className="text-[10px] uppercase tracking-widest text-cyan-400 font-bold mb-3">Demo Accounts · click to autofill</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {DEMO_ACCOUNTS.map((a) => (
+
+          <p className="text-[9px] uppercase tracking-wider text-slate-500 mb-1.5">Admin (All Buildings)</p>
+          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+            {DEMO_ACCOUNTS.filter(a => a.group === 'admin').map((a) => (
               <button
                 key={a.email}
                 type="button"
@@ -125,7 +127,51 @@ function LoginForm() {
               >
                 <p className="text-slate-100 font-semibold">{a.label}</p>
                 <p className="text-slate-400 truncate">{a.email}</p>
-                <p className="text-slate-500">pw: {a.password}</p>
+              </button>
+            ))}
+          </div>
+
+          <p className="text-[9px] uppercase tracking-wider text-blue-400 mb-1.5">🏢 Data Center (3 buildings)</p>
+          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+            {DEMO_ACCOUNTS.filter(a => a.group === 'dc').map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                onClick={() => { setEmail(a.email); setPassword(a.password); }}
+                className="text-left bg-blue-500/5 hover:bg-blue-500/10 border border-blue-500/10 rounded-lg p-2 transition"
+              >
+                <p className="text-slate-100 font-semibold">{a.label}</p>
+                <p className="text-slate-400 truncate">{a.email}</p>
+              </button>
+            ))}
+          </div>
+
+          <p className="text-[9px] uppercase tracking-wider text-emerald-400 mb-1.5">🏬 Office (3 buildings)</p>
+          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+            {DEMO_ACCOUNTS.filter(a => a.group === 'office').map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                onClick={() => { setEmail(a.email); setPassword(a.password); }}
+                className="text-left bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/10 rounded-lg p-2 transition"
+              >
+                <p className="text-slate-100 font-semibold">{a.label}</p>
+                <p className="text-slate-400 truncate">{a.email}</p>
+              </button>
+            ))}
+          </div>
+
+          <p className="text-[9px] uppercase tracking-wider text-amber-400 mb-1.5">🏨 Hospitality (3 buildings)</p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {DEMO_ACCOUNTS.filter(a => a.group === 'hotel').map((a) => (
+              <button
+                key={a.email}
+                type="button"
+                onClick={() => { setEmail(a.email); setPassword(a.password); }}
+                className="text-left bg-amber-500/5 hover:bg-amber-500/10 border border-amber-500/10 rounded-lg p-2 transition"
+              >
+                <p className="text-slate-100 font-semibold">{a.label}</p>
+                <p className="text-slate-400 truncate">{a.email}</p>
               </button>
             ))}
           </div>
@@ -136,13 +182,19 @@ function LoginForm() {
 }
 
 const DEMO_ACCOUNTS = [
-  { label: 'Sys Admin',         email: 'admin@integra.com',    password: 'admin123' },
-  { label: 'CFO / Executive',   email: 'cfo@integra.com',      password: 'cfo123' },
-  { label: 'Technician',        email: 'tech@integra.com',     password: 'tech123' },
-  { label: 'Building Manager',  email: 'manager@integra.com',  password: 'manager123' },
-  { label: 'Security Officer',  email: 'security@integra.com', password: 'security123' },
-  { label: 'Tenant',            email: 'tenant@integra.com',   password: 'tenant123' },
-  { label: 'Hotel Guest',       email: 'guest@integra.com',    password: 'guest123' },
+  // Admin — sees all 3 buildings
+  { label: 'Sys Admin',         email: 'admin@integra.com',       password: 'admin123',    group: 'admin' },
+  { label: 'CFO / Executive',   email: 'cfo@integra.com',         password: 'cfo123',      group: 'admin' },
+  // Data Center (b1)
+  { label: 'Tech DC - Mike',    email: 'tech@integra.com',        password: 'tech123',     group: 'dc' },
+  { label: 'Building Manager',  email: 'manager@integra.com',     password: 'manager123',  group: 'dc' },
+  { label: 'Security Officer',  email: 'security@integra.com',    password: 'security123', group: 'dc' },
+  // Office (b2)
+  { label: 'Tech Office - Andi',email: 'tech-office@integra.com', password: 'tech123',     group: 'office' },
+  { label: 'Tenant (Acme)',     email: 'tenant@integra.com',      password: 'tenant123',   group: 'office' },
+  // Hospitality (b3)
+  { label: 'Tech Hotel - Dewi', email: 'tech-hotel@integra.com',  password: 'tech123',     group: 'hotel' },
+  { label: 'Hotel Guest',       email: 'guest@integra.com',       password: 'guest123',    group: 'hotel' },
 ];
 
 export default function LoginPage() {

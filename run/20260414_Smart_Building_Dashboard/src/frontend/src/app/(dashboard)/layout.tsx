@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { VerticalProvider } from '@/lib/vertical';
 import AppHeader from '@/components/layout/AppHeader';
@@ -13,6 +13,7 @@ import ToastContainer from '@/components/ui/Toast';
 function AppLayoutInner({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedBuildingId, setSelectedBuildingId] = useState<string | null>(null);
 
@@ -21,6 +22,23 @@ function AppLayoutInner({ children }: { children: React.ReactNode }) {
       router.replace('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Always close mobile sidebar when navigating between pages
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Force-close sidebar (and remove backdrop) once viewport reaches lg (>=1024px)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) setSidebarOpen(false);
+    };
+    handler(mq);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const handleBuildingChange = useCallback((id: string) => {
     setSelectedBuildingId(id);

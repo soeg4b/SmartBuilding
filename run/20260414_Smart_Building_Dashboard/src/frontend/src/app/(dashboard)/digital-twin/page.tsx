@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import {
   Box, Cpu, Thermometer, Droplets, Wind, Activity, Wifi,
   AlertTriangle, Eye, Layers, RotateCcw, ZoomIn,
   ChevronLeft, WifiOff, Zap, Shield, ArrowUpDown, Snowflake, Fan, Battery, FileBox,
   MapPin, Plus, Trash2, X, Camera, Sun, Flame, DoorOpen, Move,
+  Gauge, Car, PackageSearch, CircleAlert, Waves, Plug, Timer,
 } from 'lucide-react';
 import { api, getAccessToken } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -15,18 +16,25 @@ import { clsx } from 'clsx';
 
 type IotDeviceType =
   | 'temperature' | 'humidity' | 'co2' | 'power' | 'light'
-  | 'water' | 'motion' | 'door' | 'smoke' | 'camera';
+  | 'water' | 'motion' | 'door' | 'smoke' | 'camera'
+  | 'escalator' | 'fire_alarm' | 'gas_leak' | 'machine_fault'
+  | 'parking' | 'asset_tracker' | 'flood' | 'ups_battery'
+  | 'generator' | 'voltage' | 'current' | 'pressure' | 'occupancy';
+
+type IotCategory = 'mission_critical' | 'metering';
 
 interface IotDevice {
   id: string;
   label: string;
   type: IotDeviceType;
+  category: IotCategory;
+  heartbeatSec: number;
   floorId: string;
   floorName: string;
   zoneId: string | null;
   zoneName: string | null;
-  x: number; // 0..100 (% of CAD area width)
-  y: number; // 0..100 (% of CAD area height)
+  x: number;
+  y: number;
   value: number;
   unit: string;
   status: 'normal' | 'warning' | 'critical';
@@ -35,10 +43,25 @@ interface IotDevice {
   addedAt: string;
 }
 
+interface IotCategoryMeta {
+  label: string;
+  description: string;
+  defaultHeartbeatSec: number;
+  color: string;
+}
+
+interface IotTypeCategoryEntry {
+  category: IotCategory;
+  heartbeatSec: number;
+  label: string;
+}
+
 interface IotMeta {
   types: Record<string, { unit: string; binary: boolean }>;
   floors: { id: string; name: string; level: number }[];
   zones: { id: string; name: string; floorId: string; floorName: string }[];
+  categories: Record<string, IotCategoryMeta>;
+  typeCategoryMap: Record<string, IotTypeCategoryEntry>;
 }
 
 const IOT_TYPE_LABELS: Record<IotDeviceType, string> = {
@@ -52,6 +75,24 @@ const IOT_TYPE_LABELS: Record<IotDeviceType, string> = {
   door: 'Door Contact',
   smoke: 'Smoke Detector',
   camera: 'Camera',
+  escalator: 'Escalator Sensor',
+  fire_alarm: 'Fire Alarm',
+  gas_leak: 'Gas Leak Detector',
+  machine_fault: 'Machine Fault',
+  parking: 'Parking Occupancy',
+  asset_tracker: 'Asset Tracker',
+  flood: 'Flood Sensor',
+  ups_battery: 'UPS Battery',
+  generator: 'Generator Fuel',
+  voltage: 'Voltage',
+  current: 'Current',
+  pressure: 'Pressure',
+  occupancy: 'Room Occupancy',
+};
+
+const IOT_CATEGORY_LABELS: Record<IotCategory, { label: string; color: string; icon: React.ElementType }> = {
+  mission_critical: { label: 'Mission Critical', color: 'text-red-400', icon: CircleAlert },
+  metering:         { label: 'Metering',         color: 'text-blue-400', icon: Gauge },
 };
 
 function iotIcon(type: IotDeviceType) {
@@ -66,6 +107,19 @@ function iotIcon(type: IotDeviceType) {
     case 'door':        return DoorOpen;
     case 'smoke':       return Flame;
     case 'camera':      return Camera;
+    case 'escalator':   return ArrowUpDown;
+    case 'fire_alarm':  return Flame;
+    case 'gas_leak':    return Wind;
+    case 'machine_fault': return AlertTriangle;
+    case 'parking':     return Car;
+    case 'asset_tracker': return PackageSearch;
+    case 'flood':       return Waves;
+    case 'ups_battery': return Battery;
+    case 'generator':   return Plug;
+    case 'voltage':     return Zap;
+    case 'current':     return Zap;
+    case 'pressure':    return Gauge;
+    case 'occupancy':   return Activity;
     default:            return MapPin;
   }
 }
@@ -77,9 +131,15 @@ function iotStatusColor(status: string) {
 }
 
 function formatIotValue(d: IotDevice) {
-  if (d.type === 'motion' || d.type === 'door' || d.type === 'smoke') {
-    if (d.type === 'door')   return d.value ? 'OPEN'   : 'CLOSED';
-    if (d.type === 'smoke')  return d.value ? 'ALARM'  : 'CLEAR';
+  const binaryTypes: IotDeviceType[] = ['motion', 'door', 'smoke', 'fire_alarm', 'escalator', 'machine_fault', 'asset_tracker', 'flood'];
+  if (binaryTypes.includes(d.type)) {
+    if (d.type === 'door')           return d.value ? 'OPEN'     : 'CLOSED';
+    if (d.type === 'smoke')          return d.value ? 'ALARM'    : 'CLEAR';
+    if (d.type === 'fire_alarm')     return d.value ? 'ALARM'    : 'CLEAR';
+    if (d.type === 'escalator')      return d.value ? 'FAULT'    : 'OK';
+    if (d.type === 'machine_fault')  return d.value ? 'FAULT'    : 'OK';
+    if (d.type === 'asset_tracker')  return d.value ? 'MOVED'    : 'STATIC';
+    if (d.type === 'flood')          return d.value ? 'FLOOD!'   : 'DRY';
     return d.value ? 'DETECTED' : 'IDLE';
   }
   if (d.type === 'camera') return 'Live';
@@ -707,6 +767,21 @@ function MiniStat({ icon: Icon, value, label, color }: { icon: React.ElementType
   );
 }
 
+// ─── Memoized SVG container ─────────────────────────────────────────────────
+// The CAD SVG has ~2,400 elements (183 KB). Without memoization the entire
+// SVG tree is re-diffed every time the parent state changes (polling fires
+// every 5–30 seconds, drag events 60×/s). React.memo keeps the SVG stable
+// across parent re-renders so it is parsed/inserted only when sourceSvg
+// itself changes.
+const CadSvgLayer = memo(function CadSvgLayer({ svg }: { svg: string }) {
+  return (
+    <div
+      className="w-full h-full flex items-center justify-center pointer-events-none [&>svg]:w-full [&>svg]:h-full [&_path]:!stroke-slate-200 [&_line]:!stroke-slate-200 [&_circle]:!stroke-slate-200 [&_path]:!fill-none [&_circle]:!fill-none"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+});
+
 // ─── Main Page ──────────────────────────────────────────────────────────────
 
 export default function DigitalTwinPage() {
@@ -758,9 +833,18 @@ export default function DigitalTwinPage() {
       .catch(() => {});
   }, []);
 
+  // Skip state updates when polled payload is identical (avoids re-rendering
+  // the heavy CAD SVG / IoT overlay every poll tick).
+  const liveReadingsHashRef = useRef<string>('');
   const fetchLive = useCallback(() => {
     api.get<{ data: LiveReadings }>('/digital-twin/live-readings')
-      .then(r => { setLiveReadings(r.data); setLastSync(new Date().toISOString()); })
+      .then(r => {
+        const hash = JSON.stringify(r.data);
+        if (hash === liveReadingsHashRef.current) return;
+        liveReadingsHashRef.current = hash;
+        setLiveReadings(r.data);
+        setLastSync(new Date().toISOString());
+      })
       .catch(() => {});
   }, []);
 
@@ -798,25 +882,51 @@ export default function DigitalTwinPage() {
     setLoading(false);
   }, [fetchBuilding]);
 
-  // Poll live readings every 5 seconds
+  // Poll live readings every 15s (was 5s — values rarely change that fast)
   useEffect(() => {
     fetchLive();
-    const iv = setInterval(fetchLive, 5000);
+    const iv = setInterval(fetchLive, 15000);
     return () => clearInterval(iv);
   }, [fetchLive]);
 
-  // IoT devices fetch + 5s polling for live values
+  // IoT devices fetch + polling for live values.
+  // Device list itself rarely changes; only readings do. Skip state updates
+  // when payload is identical to avoid forcing the SVG/overlay to re-render.
+  const iotHashRef = useRef<string>('');
   const fetchIot = useCallback(() => {
     api.get<{ data: IotDevice[]; meta: IotMeta }>('/digital-twin/iot-devices')
-      .then(r => { setIotDevices(r.data); setIotMeta(r.meta); })
+      .then(r => {
+        const hash = JSON.stringify(r.data);
+        if (hash !== iotHashRef.current) {
+          iotHashRef.current = hash;
+          setIotDevices(r.data);
+        }
+        setIotMeta(prev => prev ? prev : r.meta);
+      })
       .catch(() => {});
   }, []);
-  // Pause polling while actively dragging to avoid state reset
+  // Pause polling while actively dragging or when tab is hidden
   useEffect(() => {
     fetchIot();
     if (draggingId) return; // skip poll interval while dragging
-    const iv = setInterval(fetchIot, 5000);
-    return () => clearInterval(iv);
+    let iv: ReturnType<typeof setInterval> | null = null;
+    const start = () => {
+      if (iv) return;
+      iv = setInterval(fetchIot, 30000); // was 5s
+    };
+    const stop = () => {
+      if (iv) { clearInterval(iv); iv = null; }
+    };
+    const onVis = () => {
+      if (document.hidden) stop();
+      else { fetchIot(); start(); }
+    };
+    if (!document.hidden) start();
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVis);
+    };
   }, [fetchIot, draggingId]);
 
   useEffect(() => () => {
@@ -836,7 +946,7 @@ export default function DigitalTwinPage() {
     });
   }, [placeMode]);
 
-  const createDevice = useCallback(async (input: { type: IotDeviceType; label: string; floorId: string; zoneId: string | null; x: number; y: number; }) => {
+  const createDevice = useCallback(async (input: { type: IotDeviceType; label: string; floorId: string; zoneId: string | null; x: number; y: number; category: IotCategory; heartbeatSec: number }) => {
     try {
       const res = await api.post<{ data: IotDevice }>('/digital-twin/iot-devices', input);
       setIotDevices(prev => [...prev, res.data]);
@@ -900,7 +1010,10 @@ export default function DigitalTwinPage() {
     window.addEventListener('pointercancel', onUp);
   }, [editLayout, fetchIot]);
 
-  const visibleDevices = iotDevices.filter(d => iotFloorFilter === 'all' || d.floorId === iotFloorFilter);
+  const visibleDevices = useMemo(
+    () => iotDevices.filter(d => iotFloorFilter === 'all' || d.floorId === iotFloorFilter),
+    [iotDevices, iotFloorFilter]
+  );
 
   if (loading && !data) {
     return (
@@ -1048,10 +1161,7 @@ export default function DigitalTwinPage() {
                   <span className="text-xs">Rendering CAD drawing...</span>
                 </div>
               ) : sourceSvg ? (
-                <div
-                  className="w-full h-full flex items-center justify-center pointer-events-none [&>svg]:w-full [&>svg]:h-full [&_*]:!stroke-slate-200 [&_*]:!fill-none"
-                  dangerouslySetInnerHTML={{ __html: sourceSvg }}
-                />
+                <CadSvgLayer svg={sourceSvg} />
               ) : (
                 <div className="max-w-md text-center px-6">
                   <p className="text-sm text-amber-300 font-medium mb-1">CAD render unavailable</p>
@@ -1080,6 +1190,7 @@ export default function DigitalTwinPage() {
               const Icon = iotIcon(d.type);
               const c = iotStatusColor(d.status);
               const draggable = editLayout && isAdmin;
+              const isMC = d.category === 'mission_critical';
               return (
                 <div
                   key={d.id}
@@ -1090,15 +1201,16 @@ export default function DigitalTwinPage() {
                   }}
                   className={clsx(
                     'absolute -translate-x-1/2 -translate-y-1/2 z-20 group select-none',
-                    'h-7 w-7 rounded-full flex items-center justify-center text-white shadow-lg ring-2 transition-transform',
-                    c.bg, c.ring,
+                    'h-7 w-7 rounded-full flex items-center justify-center text-white shadow-lg transition-transform',
+                    c.bg,
+                    isMC ? 'ring-[3px] ring-red-400/70' : 'ring-2 ring-blue-400/50',
                     d.status === 'critical' && draggingId !== d.id && 'animate-pulse',
                     draggable
                       ? (draggingId === d.id ? 'cursor-grabbing scale-125 ring-4 ring-cyan-300/70' : 'cursor-grab hover:scale-110 ring-cyan-300/40')
                       : 'hover:scale-110 cursor-pointer',
                   )}
                   style={{ left: `${d.x}%`, top: `${d.y}%`, touchAction: 'none' }}
-                  title={draggable ? `Drag to move — ${d.label}` : `${d.label} — ${formatIotValue(d)}`}
+                  title={draggable ? `Drag to move — ${d.label}` : `[${isMC ? 'MC' : 'MTR'}] ${d.label} — ${formatIotValue(d)} (${d.heartbeatSec}s)`}
                 >
                   <Icon className="h-3.5 w-3.5 pointer-events-none" />
                 </div>
@@ -1119,10 +1231,16 @@ export default function DigitalTwinPage() {
           </div>
 
           {/* Legend */}
-          <div className="absolute bottom-4 left-4 flex gap-3 text-[10px] text-slate-400">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Normal</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Warning</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Critical</span>
+          <div className="absolute bottom-4 left-4 flex flex-col gap-1 text-[10px] text-slate-400">
+            <div className="flex gap-3">
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Normal</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Warning</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Critical</span>
+            </div>
+            <div className="flex gap-3">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-red-400/70" /> Mission Critical</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full border-2 border-blue-400/50" /> Metering</span>
+            </div>
           </div>
 
           {/* IoT Toolbar */}
@@ -1289,14 +1407,23 @@ function IotDevicePopover({
           </button>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+        <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
           <div className="bg-slate-800/60 rounded-lg p-2">
             <div className="text-[10px] uppercase tracking-wider text-slate-500">Live Reading</div>
             <div className={clsx('text-base font-bold mt-0.5', c.text)}>{formatIotValue(device)}</div>
           </div>
           <div className="bg-slate-800/60 rounded-lg p-2">
-            <div className="text-[10px] uppercase tracking-wider text-slate-500">Position</div>
-            <div className="text-slate-200 font-mono text-xs mt-0.5">x={device.x.toFixed(1)} · y={device.y.toFixed(1)}</div>
+            <div className="text-[10px] uppercase tracking-wider text-slate-500">Category</div>
+            <div className={clsx('text-xs font-semibold mt-0.5', device.category === 'mission_critical' ? 'text-red-300' : 'text-blue-300')}>
+              {device.category === 'mission_critical' ? 'Mission Critical' : 'Metering'}
+            </div>
+          </div>
+          <div className="bg-slate-800/60 rounded-lg p-2">
+            <div className="text-[10px] uppercase tracking-wider text-slate-500">Heartbeat</div>
+            <div className="text-slate-200 font-mono text-xs mt-0.5 flex items-center gap-1">
+              <Timer className="h-3 w-3 text-slate-400" />
+              {device.heartbeatSec}s
+            </div>
           </div>
         </div>
 
@@ -1330,19 +1457,35 @@ function IotPlaceModal({
   meta: IotMeta;
   defaultFloorId: string;
   onCancel: () => void;
-  onSubmit: (input: { type: IotDeviceType; label: string; floorId: string; zoneId: string | null; x: number; y: number; }) => void;
+  onSubmit: (input: { type: IotDeviceType; label: string; floorId: string; zoneId: string | null; x: number; y: number; category: IotCategory; heartbeatSec: number }) => void;
 }) {
   const [type, setType] = useState<IotDeviceType>('temperature');
   const [label, setLabel] = useState('');
   const [floorId, setFloorId] = useState(defaultFloorId);
   const [zoneId, setZoneId] = useState<string>('');
+  const [category, setCategory] = useState<IotCategory>('metering');
+  const [heartbeatSec, setHeartbeatSec] = useState<number>(30);
   const typeKeys = Object.keys(meta.types) as IotDeviceType[];
   const zonesForFloor = meta.zones.filter(z => z.floorId === floorId);
+
+  // Group types by their default category for the dropdown
+  const mcTypes = typeKeys.filter(k => meta.typeCategoryMap?.[k]?.category === 'mission_critical');
+  const mtrTypes = typeKeys.filter(k => meta.typeCategoryMap?.[k]?.category !== 'mission_critical');
+
+  // When type changes, auto-set defaults from typeCategoryMap
+  const handleTypeChange = (newType: IotDeviceType) => {
+    setType(newType);
+    const mapping = meta.typeCategoryMap?.[newType];
+    if (mapping) {
+      setCategory(mapping.category as IotCategory);
+      setHeartbeatSec(mapping.heartbeatSec);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onCancel}>
       <div
-        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md p-5"
+        className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-3">
@@ -1359,16 +1502,28 @@ function IotPlaceModal({
         </div>
 
         <div className="space-y-3">
+          {/* Device Type — grouped by category */}
           <label className="block">
             <span className="text-xs text-slate-400">Device Type</span>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value as IotDeviceType)}
+              onChange={(e) => handleTypeChange(e.target.value as IotDeviceType)}
               className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100"
             >
-              {typeKeys.map((k) => (
-                <option key={k} value={k}>{IOT_TYPE_LABELS[k]} {meta.types[k].unit ? `(${meta.types[k].unit})` : ''}</option>
-              ))}
+              {mcTypes.length > 0 && (
+                <optgroup label="\u26A0 Mission Critical">
+                  {mcTypes.map((k) => (
+                    <option key={k} value={k}>{IOT_TYPE_LABELS[k] || k} {meta.types[k]?.unit ? `(${meta.types[k].unit})` : ''}</option>
+                  ))}
+                </optgroup>
+              )}
+              {mtrTypes.length > 0 && (
+                <optgroup label="\u{1F4CA} Metering">
+                  {mtrTypes.map((k) => (
+                    <option key={k} value={k}>{IOT_TYPE_LABELS[k] || k} {meta.types[k]?.unit ? `(${meta.types[k].unit})` : ''}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </label>
 
@@ -1381,6 +1536,72 @@ function IotPlaceModal({
               maxLength={80}
               className="mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100"
             />
+          </label>
+
+          {/* Category */}
+          <div>
+            <span className="text-xs text-slate-400">Sensor Category</span>
+            <div className="mt-1.5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => { setCategory('mission_critical'); if (heartbeatSec > 10) setHeartbeatSec(5); }}
+                className={clsx(
+                  'px-3 py-2 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all',
+                  category === 'mission_critical'
+                    ? 'bg-red-500/20 border-red-500/50 text-red-200 ring-1 ring-red-400/30'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700',
+                )}
+              >
+                <CircleAlert className="h-3.5 w-3.5" />
+                Mission Critical
+              </button>
+              <button
+                type="button"
+                onClick={() => { setCategory('metering'); if (heartbeatSec < 15) setHeartbeatSec(30); }}
+                className={clsx(
+                  'px-3 py-2 rounded-lg border text-xs font-medium flex items-center gap-1.5 transition-all',
+                  category === 'metering'
+                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-200 ring-1 ring-blue-400/30'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700',
+                )}
+              >
+                <Gauge className="h-3.5 w-3.5" />
+                Metering
+              </button>
+            </div>
+            <p className="mt-1 text-[10px] text-slate-500">
+              {category === 'mission_critical'
+                ? 'Real-time alert — immediate response required when triggered'
+                : 'Periodic measurement — for analytics, dashboards & reporting'}
+            </p>
+          </div>
+
+          {/* Heartbeat */}
+          <label className="block">
+            <span className="text-xs text-slate-400 flex items-center gap-1"><Timer className="h-3 w-3" /> Heartbeat Interval (seconds)</span>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="number" min={1} max={3600} step={1}
+                value={heartbeatSec}
+                onChange={(e) => setHeartbeatSec(Math.max(1, Math.min(3600, Number(e.target.value) || 1)))}
+                className="w-24 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 text-sm text-slate-100 font-mono"
+              />
+              <div className="flex gap-1">
+                {(category === 'mission_critical' ? [2, 3, 5, 10] : [15, 30, 60, 300]).map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setHeartbeatSec(v)}
+                    className={clsx(
+                      'px-2 py-1 rounded text-[10px] border',
+                      heartbeatSec === v ? 'bg-cyan-500/25 border-cyan-400/50 text-cyan-200' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700',
+                    )}
+                  >
+                    {v}s
+                  </button>
+                ))}
+              </div>
+            </div>
           </label>
 
           <label className="block">
@@ -1421,7 +1642,7 @@ function IotPlaceModal({
           <button
             onClick={() => {
               if (!label.trim()) { alert('Label is required'); return; }
-              onSubmit({ type, label: label.trim(), floorId, zoneId: zoneId || null, x: position.x, y: position.y });
+              onSubmit({ type, label: label.trim(), floorId, zoneId: zoneId || null, x: position.x, y: position.y, category, heartbeatSec });
             }}
             className="px-3 py-1.5 rounded-lg text-xs text-white bg-cyan-600 hover:bg-cyan-500 flex items-center gap-1.5"
           >

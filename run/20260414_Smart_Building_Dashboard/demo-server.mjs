@@ -103,38 +103,105 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 // Mock Data
 // =============================================================================
 const USERS = [
-  // Platform / Operator side
+  // Platform / Operator side — sys_admin sees ALL buildings
   { id: 'u1', email: 'admin@integra.com', name: 'System Administrator', role: 'sys_admin', password: 'admin123', isActive: true, buildingId: 'b1', lastLoginAt: new Date().toISOString(), createdAt: '2026-01-01T00:00:00Z', mfaEnabled: true, biometricEnrolled: true },
   { id: 'u2', email: 'cfo@integra.com', name: 'CFO Executive', role: 'financial_decision_maker', password: 'cfo123', isActive: true, buildingId: 'b1', lastLoginAt: new Date().toISOString(), createdAt: '2026-01-15T00:00:00Z', mfaEnabled: true, biometricEnrolled: false },
-  { id: 'u3', email: 'tech@integra.com', name: 'Technician Mike', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b1', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
+  // Technicians — each assigned to one building type
+  { id: 'u3', email: 'tech@integra.com', name: 'Tech DC - Mike', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b1', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
+  { id: 'u3b', email: 'tech-office@integra.com', name: 'Tech Office - Andi', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b2', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
+  { id: 'u3c', email: 'tech-hotel@integra.com', name: 'Tech Hotel - Dewi', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b3', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
   { id: 'u4', email: 'manager@integra.com', name: 'Building Manager Sari', role: 'building_manager', password: 'manager123', isActive: true, buildingId: 'b1', lastLoginAt: new Date().toISOString(), createdAt: '2026-02-05T00:00:00Z', mfaEnabled: true, biometricEnrolled: true },
   { id: 'u5', email: 'security@integra.com', name: 'Security Officer Joko', role: 'security_officer', password: 'security123', isActive: true, buildingId: 'b1', lastLoginAt: null, createdAt: '2026-02-10T00:00:00Z', mfaEnabled: true, biometricEnrolled: true },
-  // Tenant / Guest side
-  { id: 'u6', email: 'tenant@integra.com', name: 'Tenant Rina (Acme Corp)', role: 'tenant', password: 'tenant123', isActive: true, buildingId: 'b1', tenantCompany: 'Acme Corp', floorId: 'f3', lastLoginAt: null, createdAt: '2026-03-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
-  { id: 'u7', email: 'guest@integra.com', name: 'Hotel Guest Budi', role: 'guest', password: 'guest123', isActive: true, buildingId: 'b1', roomNumber: '1208', checkIn: '2026-04-19', checkOut: '2026-04-22', lastLoginAt: null, createdAt: '2026-04-19T00:00:00Z', mfaEnabled: false, biometricEnrolled: false },
+  // Tenant — assigned to office building (b2)
+  { id: 'u6', email: 'tenant@integra.com', name: 'Tenant Rina (Acme Corp)', role: 'tenant', password: 'tenant123', isActive: true, buildingId: 'b2', tenantCompany: 'Acme Corp', floorId: 'f3', lastLoginAt: null, createdAt: '2026-03-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
+  // Guest — assigned to hospitality building (b3)
+  { id: 'u7', email: 'guest@integra.com', name: 'Hotel Guest Budi', role: 'guest', password: 'guest123', isActive: true, buildingId: 'b3', roomNumber: '1208', checkIn: '2026-04-19', checkOut: '2026-04-22', lastLoginAt: null, createdAt: '2026-04-19T00:00:00Z', mfaEnabled: false, biometricEnrolled: false },
 ];
 
 const BUILDINGS = [
+  // ── Data Center buildings ──
   {
     id: 'b1',
-    name: 'Type 1 - Data Center Tower',
-    type: 'type1',
+    name: 'DC Cikarang Tower',
+    type: 'data_center',
     vertical: 'data_center',
     address: 'Kawasan Industri Cikarang, Bekasi',
+    totalFloors: 6,
+    totalArea: 8500,
   },
+  {
+    id: 'b1b',
+    name: 'DC Cibitung Facility',
+    type: 'data_center',
+    vertical: 'data_center',
+    address: 'Jl. Raya Cibitung KM 3, Bekasi',
+    totalFloors: 4,
+    totalArea: 6200,
+  },
+  {
+    id: 'b1c',
+    name: 'DC Sentul Colocation',
+    type: 'data_center',
+    vertical: 'data_center',
+    address: 'Sentul City, Bogor',
+    totalFloors: 3,
+    totalArea: 4800,
+  },
+  // ── Office buildings ──
   {
     id: 'b2',
-    name: 'Type 2 - Office Complex',
-    type: 'type2',
+    name: 'Sudirman Office Tower',
+    type: 'office',
     vertical: 'office',
     address: 'Jl. Sudirman No. 100, Jakarta',
+    totalFloors: 25,
+    totalArea: 32000,
   },
   {
+    id: 'b2b',
+    name: 'Kuningan Business Park',
+    type: 'office',
+    vertical: 'office',
+    address: 'Jl. HR Rasuna Said, Jakarta',
+    totalFloors: 18,
+    totalArea: 24000,
+  },
+  {
+    id: 'b2c',
+    name: 'BSD Green Office',
+    type: 'office',
+    vertical: 'office',
+    address: 'BSD City, Tangerang Selatan',
+    totalFloors: 12,
+    totalArea: 15000,
+  },
+  // ── Hospitality buildings ──
+  {
     id: 'b3',
-    name: 'Type 3 - Hospitality Hotel & Residence',
-    type: 'type3',
+    name: 'Nusa Dua Beach Resort',
+    type: 'hospitality',
     vertical: 'hospitality',
-    address: 'Nusa Dua, Bali',
+    address: 'ITDC Nusa Dua, Bali',
+    totalFloors: 8,
+    totalArea: 18000,
+  },
+  {
+    id: 'b3b',
+    name: 'Ubud Wellness Retreat',
+    type: 'hospitality',
+    vertical: 'hospitality',
+    address: 'Jl. Monkey Forest, Ubud, Bali',
+    totalFloors: 4,
+    totalArea: 9500,
+  },
+  {
+    id: 'b3c',
+    name: 'Jakarta City Hotel',
+    type: 'hospitality',
+    vertical: 'hospitality',
+    address: 'Jl. Thamrin No. 28, Jakarta',
+    totalFloors: 20,
+    totalArea: 26000,
   },
 ];
 
@@ -185,6 +252,70 @@ const IOT_DEVICE_TYPES = {
   door:        { unit: '',    binary: true },
   smoke:       { unit: '',    binary: true, criticalOn: true },
   camera:      { unit: '' },
+  // New mission-critical types
+  escalator:     { unit: '',   binary: true, criticalOn: true },
+  fire_alarm:    { unit: '',   binary: true, criticalOn: true },
+  gas_leak:      { unit: 'ppm', min: 0, max: 100, warn: 20, crit: 50 },
+  machine_fault: { unit: '',   binary: true, criticalOn: true },
+  parking:       { unit: '%',  min: 0, max: 100, warn: 85, crit: 95 },
+  asset_tracker: { unit: '',   binary: true },
+  flood:         { unit: '',   binary: true, criticalOn: true },
+  ups_battery:   { unit: '%',  min: 0, max: 100, warn: 30, crit: 15, invertWarn: true },
+  generator:     { unit: '%',  min: 0, max: 100, warn: 25, crit: 10, invertWarn: true },
+  // Additional metering types
+  voltage:       { unit: 'V',  min: 210, max: 240, warn: 230, crit: 240 },
+  current:       { unit: 'A',  min: 0,   max: 100, warn: 80,  crit: 95 },
+  pressure:      { unit: 'bar', min: 1,  max: 10,  warn: 8,   crit: 9 },
+  occupancy:     { unit: 'ppl', min: 0,  max: 300, warn: 250, crit: 280 },
+};
+
+// ─── IoT Sensor Categories ──────────────────────────────────────────────────
+// Each sensor has a category and heartbeat (polling interval in seconds).
+// mission_critical  → real-time alerting, immediate response needed
+// metering          → periodic measurement, for analytics & dashboards
+const IOT_SENSOR_CATEGORIES = {
+  mission_critical: {
+    label: 'Mission Critical',
+    description: 'Real-time alert sensors — require immediate response when triggered',
+    defaultHeartbeatSec: 5,
+    color: '#ef4444', // red
+  },
+  metering: {
+    label: 'Metering',
+    description: 'Periodic measurement sensors — for analytics, dashboards & reporting',
+    defaultHeartbeatSec: 30,
+    color: '#3b82f6', // blue
+  },
+};
+
+// Map each device type to its default category + heartbeat
+const IOT_TYPE_CATEGORY_MAP = {
+  // Mission Critical sensors
+  smoke:         { category: 'mission_critical', heartbeatSec: 3,  label: 'Smoke Detector' },
+  fire_alarm:    { category: 'mission_critical', heartbeatSec: 2,  label: 'Fire Alarm' },
+  gas_leak:      { category: 'mission_critical', heartbeatSec: 3,  label: 'Gas Leak Detector' },
+  escalator:     { category: 'mission_critical', heartbeatSec: 5,  label: 'Escalator Sensor' },
+  machine_fault: { category: 'mission_critical', heartbeatSec: 5,  label: 'Machine Fault' },
+  flood:         { category: 'mission_critical', heartbeatSec: 5,  label: 'Flood Sensor' },
+  asset_tracker: { category: 'mission_critical', heartbeatSec: 10, label: 'Asset Tracker' },
+  door:          { category: 'mission_critical', heartbeatSec: 5,  label: 'Door Contact' },
+  motion:        { category: 'mission_critical', heartbeatSec: 5,  label: 'Motion (PIR)' },
+
+  // Metering sensors
+  temperature:   { category: 'metering', heartbeatSec: 30,  label: 'Temperature' },
+  humidity:      { category: 'metering', heartbeatSec: 30,  label: 'Humidity' },
+  co2:           { category: 'metering', heartbeatSec: 30,  label: 'CO₂' },
+  power:         { category: 'metering', heartbeatSec: 15,  label: 'Power Meter' },
+  light:         { category: 'metering', heartbeatSec: 60,  label: 'Light Sensor' },
+  water:         { category: 'metering', heartbeatSec: 15,  label: 'Water Flow' },
+  camera:        { category: 'metering', heartbeatSec: 60,  label: 'Camera' },
+  voltage:       { category: 'metering', heartbeatSec: 15,  label: 'Voltage' },
+  current:       { category: 'metering', heartbeatSec: 15,  label: 'Current' },
+  pressure:      { category: 'metering', heartbeatSec: 30,  label: 'Pressure' },
+  parking:       { category: 'metering', heartbeatSec: 30,  label: 'Parking Occupancy' },
+  occupancy:     { category: 'metering', heartbeatSec: 30,  label: 'Room Occupancy' },
+  ups_battery:   { category: 'metering', heartbeatSec: 30,  label: 'UPS Battery' },
+  generator:     { category: 'metering', heartbeatSec: 30,  label: 'Generator Fuel' },
 };
 
 const IOT_DEVICES_FILE = nodePath.resolve(DT_CACHE_DIR, 'iot-devices.json');
@@ -192,23 +323,35 @@ const IOT_DEVICES_FILE = nodePath.resolve(DT_CACHE_DIR, 'iot-devices.json');
 function seedIotDevices() {
   const floorSeeds = {
     f1: [
-      { type: 'temperature', label: 'Lobby Temp',         zoneId: 'z1', x: 22, y: 65 },
-      { type: 'humidity',    label: 'Lobby RH',           zoneId: 'z1', x: 26, y: 70 },
-      { type: 'motion',      label: 'Lobby PIR',          zoneId: 'z1', x: 18, y: 60 },
-      { type: 'camera',      label: 'Lobby Camera 1',     zoneId: 'z1', x: 30, y: 55 },
-      { type: 'temperature', label: 'Server Rack Temp',   zoneId: 'z2', x: 70, y: 30 },
-      { type: 'humidity',    label: 'Server Room RH',     zoneId: 'z2', x: 75, y: 32 },
-      { type: 'smoke',       label: 'Server Smoke Det.',  zoneId: 'z2', x: 72, y: 28 },
-      { type: 'power',       label: 'UPS Load',           zoneId: 'z2', x: 80, y: 35 },
+      // Mission Critical
+      { type: 'smoke',       label: 'Server Smoke Det.',  zoneId: 'z2', x: 72, y: 28, category: 'mission_critical', heartbeatSec: 3 },
+      { type: 'door',        label: 'Server Room Door',   zoneId: 'z2', x: 68, y: 25, category: 'mission_critical', heartbeatSec: 5 },
+      { type: 'motion',      label: 'Lobby PIR',          zoneId: 'z1', x: 18, y: 60, category: 'mission_critical', heartbeatSec: 5 },
+      { type: 'fire_alarm',  label: 'Lobby Fire Alarm',   zoneId: 'z1', x: 15, y: 55, category: 'mission_critical', heartbeatSec: 2 },
+      { type: 'flood',       label: 'Basement Flood Det.',zoneId: null, x: 50, y: 85, category: 'mission_critical', heartbeatSec: 5 },
+      // Metering
+      { type: 'temperature', label: 'Lobby Temp',         zoneId: 'z1', x: 22, y: 65, category: 'metering', heartbeatSec: 30 },
+      { type: 'humidity',    label: 'Lobby RH',           zoneId: 'z1', x: 26, y: 70, category: 'metering', heartbeatSec: 30 },
+      { type: 'camera',      label: 'Lobby Camera 1',     zoneId: 'z1', x: 30, y: 55, category: 'metering', heartbeatSec: 60 },
+      { type: 'temperature', label: 'Server Rack Temp',   zoneId: 'z2', x: 70, y: 30, category: 'metering', heartbeatSec: 15 },
+      { type: 'humidity',    label: 'Server Room RH',     zoneId: 'z2', x: 75, y: 32, category: 'metering', heartbeatSec: 30 },
+      { type: 'power',       label: 'UPS Load',           zoneId: 'z2', x: 80, y: 35, category: 'metering', heartbeatSec: 15 },
+      { type: 'ups_battery', label: 'UPS Battery',        zoneId: 'z2', x: 82, y: 38, category: 'metering', heartbeatSec: 30 },
     ],
     f2: [
-      { type: 'temperature', label: 'Office-A Temp',      zoneId: 'z3', x: 30, y: 40 },
-      { type: 'co2',         label: 'Office-A CO2',       zoneId: 'z3', x: 35, y: 45 },
-      { type: 'motion',      label: 'Office-A PIR',       zoneId: 'z3', x: 32, y: 50 },
-      { type: 'light',       label: 'Office-A Lux',       zoneId: 'z3', x: 38, y: 42 },
-      { type: 'temperature', label: 'Meeting-1 Temp',     zoneId: 'z4', x: 60, y: 55 },
-      { type: 'co2',         label: 'Meeting-1 CO2',      zoneId: 'z4', x: 64, y: 58 },
-      { type: 'door',        label: 'Meeting-1 Door',     zoneId: 'z4', x: 58, y: 50 },
+      // Mission Critical
+      { type: 'door',          label: 'Meeting-1 Door',     zoneId: 'z4', x: 58, y: 50, category: 'mission_critical', heartbeatSec: 5 },
+      { type: 'smoke',         label: 'Office-A Smoke',     zoneId: 'z3', x: 28, y: 38, category: 'mission_critical', heartbeatSec: 3 },
+      { type: 'escalator',     label: 'Escalator F2 Sensor',zoneId: null, x: 90, y: 50, category: 'mission_critical', heartbeatSec: 5 },
+      { type: 'machine_fault', label: 'AHU-2 Fault',        zoneId: null, x: 85, y: 20, category: 'mission_critical', heartbeatSec: 5 },
+      // Metering
+      { type: 'temperature', label: 'Office-A Temp',      zoneId: 'z3', x: 30, y: 40, category: 'metering', heartbeatSec: 30 },
+      { type: 'co2',         label: 'Office-A CO2',       zoneId: 'z3', x: 35, y: 45, category: 'metering', heartbeatSec: 30 },
+      { type: 'light',       label: 'Office-A Lux',       zoneId: 'z3', x: 38, y: 42, category: 'metering', heartbeatSec: 60 },
+      { type: 'temperature', label: 'Meeting-1 Temp',     zoneId: 'z4', x: 60, y: 55, category: 'metering', heartbeatSec: 30 },
+      { type: 'co2',         label: 'Meeting-1 CO2',      zoneId: 'z4', x: 64, y: 58, category: 'metering', heartbeatSec: 30 },
+      { type: 'occupancy',   label: 'Meeting-1 Occupancy',zoneId: 'z4', x: 62, y: 52, category: 'metering', heartbeatSec: 30 },
+      { type: 'motion',      label: 'Office-A PIR',       zoneId: 'z3', x: 32, y: 50, category: 'mission_critical', heartbeatSec: 5 },
     ],
   };
   const seed = [];
@@ -216,15 +359,18 @@ function seedIotDevices() {
   for (const [floorId, list] of Object.entries(floorSeeds)) {
     const floor = FLOORS.find(f => f.id === floorId);
     for (const d of list) {
-      const zone = ZONES.find(z => z.id === d.zoneId);
+      const zone = d.zoneId ? ZONES.find(z => z.id === d.zoneId) : null;
+      const typeMap = IOT_TYPE_CATEGORY_MAP[d.type] || {};
       n += 1;
       seed.push({
         id: `iot-${floorId}-${n}`,
         label: d.label,
         type: d.type,
+        category: d.category || typeMap.category || 'metering',
+        heartbeatSec: d.heartbeatSec || typeMap.heartbeatSec || 30,
         floorId,
         floorName: floor ? floor.name : floorId,
-        zoneId: d.zoneId,
+        zoneId: d.zoneId || null,
         zoneName: zone ? zone.name : null,
         x: d.x,
         y: d.y,
@@ -259,7 +405,10 @@ function saveIotDevices() {
 function liveIotReading(device) {
   const meta = IOT_DEVICE_TYPES[device.type] || {};
   if (meta.binary) {
-    const probability = device.type === 'smoke' ? 0.02 : (device.type === 'door' ? 0.3 : 0.5);
+    const probability = device.type === 'smoke' || device.type === 'fire_alarm' || device.type === 'gas_leak' || device.type === 'flood' ? 0.02
+      : device.type === 'machine_fault' || device.type === 'escalator' || device.type === 'asset_tracker' ? 0.05
+      : device.type === 'door' ? 0.3
+      : 0.5;
     const on = Math.random() < probability;
     return {
       value: on ? 1 : 0,
@@ -272,8 +421,14 @@ function liveIotReading(device) {
   }
   const v = rnd(meta.min ?? 0, meta.max ?? 100);
   let status = 'normal';
-  if (meta.crit != null && v >= meta.crit) status = 'critical';
-  else if (meta.warn != null && v >= meta.warn) status = 'warning';
+  if (meta.invertWarn) {
+    // Lower is worse (e.g. battery/fuel level)
+    if (meta.crit != null && v <= meta.crit) status = 'critical';
+    else if (meta.warn != null && v <= meta.warn) status = 'warning';
+  } else {
+    if (meta.crit != null && v >= meta.crit) status = 'critical';
+    else if (meta.warn != null && v >= meta.warn) status = 'warning';
+  }
   return { value: Number(v.toFixed(1)), unit: meta.unit || '', status };
 }
 function deviceWithLive(device) {
@@ -814,7 +969,13 @@ function parseUrl(rawUrl) {
   return { pathname: pathname.replace(/^\/api\/v1/, ''), params };
 }
 
-function safeUser(u) { const { password: _, ...s } = u; return s; }
+function safeUser(u) {
+  const { password: _, ...s } = u;
+  // Include the building's vertical so frontend can lock the sidebar
+  const building = BUILDINGS.find(b => b.id === u.buildingId);
+  if (building) s.buildingVertical = building.vertical;
+  return s;
+}
 
 // =============================================================================
 // Dynamic data generators
@@ -1204,7 +1365,8 @@ async function handle(req, res) {
     if (typeof body.password !== 'string' || body.password.length < 6) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'Password must be at least 6 characters' } }, 400);
     // Validate name
     if (typeof body.name !== 'string' || body.name.length < 1 || body.name.length > 100) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'Name must be 1-100 characters' } }, 400);
-    const newUser = { id: `u${USERS.length + 1}`, email: body.email, name: body.name, role, password: body.password, isActive: true, buildingId: 'b1', lastLoginAt: null, createdAt: new Date().toISOString() };
+    const assignedBuilding = body.buildingId && BUILDINGS.some(b => b.id === body.buildingId) ? body.buildingId : 'b1';
+    const newUser = { id: `u${USERS.length + 1}`, email: body.email, name: body.name, role, password: body.password, isActive: true, buildingId: assignedBuilding, lastLoginAt: null, createdAt: new Date().toISOString() };
     USERS.push(newUser);
     return json(res, { data: safeUser(newUser) }, 201);
   }
@@ -1539,7 +1701,7 @@ async function handle(req, res) {
       const svg = await getDigitalTwinSvg();
       res.writeHead(200, {
         'Content-Type': 'image/svg+xml; charset=utf-8',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'private, max-age=300',
         'Access-Control-Allow-Origin': 'http://localhost:5001',
         'Access-Control-Allow-Credentials': 'true',
       });
@@ -1556,12 +1718,21 @@ async function handle(req, res) {
     let list = IOT_DEVICES;
     if (floorId) list = list.filter(d => d.floorId === floorId);
     const types = Object.fromEntries(Object.entries(IOT_DEVICE_TYPES).map(([k, v]) => [k, { unit: v.unit || '', binary: !!v.binary }]));
-    return json(res, { data: list.map(deviceWithLive), meta: { types, floors: FLOORS, zones: ZONES } });
+    return json(res, {
+      data: list.map(deviceWithLive),
+      meta: {
+        types,
+        floors: FLOORS,
+        zones: ZONES,
+        categories: IOT_SENSOR_CATEGORIES,
+        typeCategoryMap: IOT_TYPE_CATEGORY_MAP,
+      },
+    });
   }
   if (path === '/digital-twin/iot-devices' && method === 'POST') {
     if (!checkAccess(['sys_admin'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Admin only' } }, 403);
     const body = await parseBody(req);
-    const { type, label, floorId, zoneId, x, y } = body || {};
+    const { type, label, floorId, zoneId, x, y, category, heartbeatSec } = body || {};
     if (!type || !IOT_DEVICE_TYPES[type]) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'Invalid device type' } }, 400);
     if (!label || typeof label !== 'string' || label.trim().length === 0 || label.length > 80) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'label is required (max 80 chars)' } }, 400);
     const floor = FLOORS.find(f => f.id === floorId);
@@ -1570,11 +1741,17 @@ async function handle(req, res) {
     if (!isFinite(xn) || !isFinite(yn) || xn < 0 || xn > 100 || yn < 0 || yn > 100) {
       return json(res, { error: { code: 'VALIDATION_ERROR', message: 'x/y must be between 0 and 100' } }, 400);
     }
+    // Category validation
+    const typeMap = IOT_TYPE_CATEGORY_MAP[type] || {};
+    const resolvedCategory = (category && IOT_SENSOR_CATEGORIES[category]) ? category : (typeMap.category || 'metering');
+    const resolvedHeartbeat = (heartbeatSec && Number(heartbeatSec) >= 1 && Number(heartbeatSec) <= 3600) ? Number(heartbeatSec) : (typeMap.heartbeatSec || 30);
     const zone = zoneId ? ZONES.find(z => z.id === zoneId) : null;
     const dev = {
       id: `iot-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       label: label.trim(),
       type,
+      category: resolvedCategory,
+      heartbeatSec: resolvedHeartbeat,
       floorId: floor.id,
       floorName: floor.name,
       zoneId: zone ? zone.id : null,
@@ -1623,6 +1800,15 @@ async function handle(req, res) {
         if (!zone) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'Invalid zoneId' } }, 400);
         dev.zoneId = zone.id; dev.zoneName = zone.name;
       }
+    }
+    if (body.category !== undefined) {
+      if (!IOT_SENSOR_CATEGORIES[body.category]) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'Invalid category' } }, 400);
+      dev.category = body.category;
+    }
+    if (body.heartbeatSec !== undefined) {
+      const hb = Number(body.heartbeatSec);
+      if (!isFinite(hb) || hb < 1 || hb > 3600) return json(res, { error: { code: 'VALIDATION_ERROR', message: 'heartbeatSec must be 1-3600' } }, 400);
+      dev.heartbeatSec = hb;
     }
     saveIotDevices();
     return json(res, { data: deviceWithLive(dev) });
@@ -1724,9 +1910,15 @@ async function handle(req, res) {
   const fpRoomMatch = path.match(/^\/floor-plans\/([^/]+)\/rooms$/);
   if (fpRoomMatch) return json(res, { data: FLOOR_PLAN_ROOMS[fpRoomMatch[1]] || [] });
 
-  // Buildings catalog (includes Type1/Type2/Type3)
+  // Buildings catalog — admin sees all (optionally filtered by ?vertical=), others see only their assigned building
   if (path === '/buildings' && method === 'GET') {
-    return json(res, { data: BUILDINGS });
+    if (user.role === 'sys_admin') {
+      const vFilter = params.vertical;
+      const list = vFilter ? BUILDINGS.filter(b => b.vertical === vFilter) : BUILDINGS;
+      return json(res, { data: list });
+    }
+    const myBuilding = BUILDINGS.find(b => b.id === user.buildingId);
+    return json(res, { data: myBuilding ? [myBuilding] : [] });
   }
 
   // Buildings geospatial
@@ -3084,20 +3276,27 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log('');
-  console.log('╔══════════════════════════════════════════════════════════════╗');
-  console.log('║          INTEGRA — Total Building Resource Dashboard         ║');
-  console.log('╠══════════════════════════════════════════════════════════════╣');
-  console.log(`║  API:     http://localhost:${PORT}                              ║`);
-  console.log(`║  Health:  http://localhost:${PORT}/api/v1/health                 ║`);
-  console.log('╠══════════════════════════════════════════════════════════════╣');
-  console.log('║  Demo Accounts (email / password / role):                    ║');
-  console.log('║   admin@integra.com    / admin123    → sys_admin             ║');
-  console.log('║   cfo@integra.com      / cfo123      → financial_decision    ║');
-  console.log('║   tech@integra.com     / tech123     → technician            ║');
-  console.log('║   manager@integra.com  / manager123  → building_manager      ║');
-  console.log('║   security@integra.com / security123 → security_officer      ║');
-  console.log('║   tenant@integra.com   / tenant123   → tenant                ║');
-  console.log('║   guest@integra.com    / guest123    → guest                 ║');
-  console.log('╚══════════════════════════════════════════════════════════════╝');
+  console.log('╔════════════════════════════════════════════════════════════════════════════╗');
+  console.log('║              INTEGRA — Total Building Resource Dashboard                   ║');
+  console.log('╠════════════════════════════════════════════════════════════════════════════╣');
+  console.log(`║  API:     http://localhost:${PORT}                                              ║`);
+  console.log(`║  Health:  http://localhost:${PORT}/api/v1/health                                 ║`);
+  console.log('╠════════════════════════════════════════════════════════════════════════════╣');
+  console.log('║  Buildings (9 total — 3 per type):                                         ║');
+  console.log('║  🏢 Data Center : DC Cikarang · DC Cibitung · DC Sentul                   ║');
+  console.log('║  🏬 Office      : Sudirman Tower · Kuningan Park · BSD Green               ║');
+  console.log('║  🏨 Hospitality : Nusa Dua Resort · Ubud Retreat · Jakarta City Hotel      ║');
+  console.log('╠════════════════════════════════════════════════════════════════════════════╣');
+  console.log('║  Demo Accounts (email / password → role):                                  ║');
+  console.log('║   admin@integra.com       / admin123    → sys_admin (ALL buildings)        ║');
+  console.log('║   cfo@integra.com         / cfo123      → financial  (DC Cikarang)         ║');
+  console.log('║   tech@integra.com        / tech123     → technician (DC Cikarang)         ║');
+  console.log('║   tech-office@integra.com / tech123     → technician (Sudirman Tower)      ║');
+  console.log('║   tech-hotel@integra.com  / tech123     → technician (Nusa Dua Resort)     ║');
+  console.log('║   manager@integra.com     / manager123  → bldg_mgr   (DC Cikarang)         ║');
+  console.log('║   security@integra.com    / security123 → security   (DC Cikarang)         ║');
+  console.log('║   tenant@integra.com      / tenant123   → tenant     (Sudirman Tower)      ║');
+  console.log('║   guest@integra.com       / guest123    → guest      (Nusa Dua Resort)     ║');
+  console.log('╚════════════════════════════════════════════════════════════════════════════╝');
   console.log('');
 });

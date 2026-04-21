@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Building2, ChevronDown, Menu, LogOut, User } from 'lucide-react';
+import { Bell, Building2, ChevronDown, Menu, LogOut, User, Server, Briefcase, Hotel } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { useVertical } from '@/lib/vertical';
@@ -11,6 +11,7 @@ interface Building {
   name: string;
   type?: string;
   vertical?: 'data_center' | 'office' | 'hospitality';
+  address?: string;
 }
 
 interface Notification {
@@ -30,7 +31,7 @@ interface AppHeaderProps {
 
 export default function AppHeader({ onMenuClick, selectedBuildingId, onBuildingChange }: AppHeaderProps) {
   const { user, logout } = useAuth();
-  const { definition: vertical, setVertical } = useVertical();
+  const { vertical: currentVertical, definition: vertical, setVertical } = useVertical();
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -42,17 +43,31 @@ export default function AppHeader({ onMenuClick, selectedBuildingId, onBuildingC
   const notifRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
 
+  const isAdmin = user?.role === 'sys_admin';
+
+  // Fetch buildings — admin fetches filtered by vertical; others get their single building
   useEffect(() => {
-    api.get<{ data: Building[] }>('/buildings')
+    const params: Record<string, string> = {};
+    if (isAdmin) params.vertical = currentVertical;
+
+    api.get<{ data: Building[] }>('/buildings', params)
       .then((res) => {
         const list = res.data;
         setBuildings(list);
-        if (!selectedBuildingId && list.length > 0) {
+        // Auto-select first building of this vertical if current selection is not in the list
+        if (list.length > 0 && !list.some(b => b.id === selectedBuildingId)) {
           onBuildingChange(list[0].id);
         }
       })
       .catch(() => {});
-  }, [selectedBuildingId, onBuildingChange]);
+  }, [currentVertical, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // For non-admin: lock vertical to their building's vertical on first load
+  useEffect(() => {
+    if (!isAdmin && buildings.length === 1 && buildings[0].vertical) {
+      setVertical(buildings[0].vertical);
+    }
+  }, [buildings, isAdmin, setVertical]);
 
   useEffect(() => {
     api.get<{ data: Notification[]; meta?: { total: number } }>('/notifications', { limit: 10 })
@@ -85,6 +100,22 @@ export default function AppHeader({ onMenuClick, selectedBuildingId, onBuildingC
     } catch {}
   };
 
+  const VERTICAL_COLORS: Record<string, string> = {
+    data_center: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+    office: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    hospitality: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  };
+  const VERTICAL_ICONS: Record<string, React.ElementType> = {
+    data_center: Server,
+    office: Briefcase,
+    hospitality: Hotel,
+  };
+  const VERTICAL_LABELS: Record<string, string> = {
+    data_center: 'Data Center',
+    office: 'Office',
+    hospitality: 'Hospitality',
+  };
+
   return (
     <header className="h-16 bg-slate-800 border-b border-slate-700 flex items-center px-4 gap-4 fixed top-0 left-0 right-0 z-40">
       {/* Mobile menu button */}
@@ -103,39 +134,62 @@ export default function AppHeader({ onMenuClick, selectedBuildingId, onBuildingC
         </div>
       </a>
 
-      {/* Vertical badge */}
-      <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold tracking-wide bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-1 rounded-full mr-2">
-        {vertical.shortLabel.toUpperCase()}
-      </span>
+      {/* Vertical badge — always shows current vertical */}
+      {(() => {
+        const v = currentVertical;
+        const VIcon = VERTICAL_ICONS[v] ?? Building2;
+        return (
+          <span className={`hidden md:inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wide border px-2.5 py-1 rounded-full ${VERTICAL_COLORS[v] || ''}`}>
+            <VIcon className="h-3.5 w-3.5" />
+            {VERTICAL_LABELS[v]?.toUpperCase() ?? v.toUpperCase()}
+          </span>
+        );
+      })()}
 
       {/* Building selector */}
       <div ref={buildingRef} className="relative">
-        <button
-          onClick={() => setShowBuildingMenu(!showBuildingMenu)}
-          className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 rounded-lg px-3 py-1.5 text-sm transition-colors"
-        >
-          <Building2 className="h-4 w-4 text-slate-400" />
-          <span className="max-w-[120px] truncate">{selectedBuilding?.name ?? 'Select building'}</span>
-          <ChevronDown className="h-3 w-3 text-slate-400" />
-        </button>
-        {showBuildingMenu && buildings.length > 0 && (
-          <div className="absolute top-full mt-1 left-0 bg-slate-700 border border-slate-600 rounded-lg shadow-xl py-1 min-w-[200px] z-50">
-            {buildings.map((b) => (
-              <button
-                key={b.id}
-                onClick={() => {
-                  onBuildingChange(b.id);
-                  if (b.vertical) setVertical(b.vertical);
-                  setShowBuildingMenu(false);
-                }}
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-slate-600 ${b.id === selectedBuildingId ? 'text-blue-400' : 'text-slate-200'}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span>{b.name}</span>
-                  {b.type && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-600 text-slate-300 uppercase">{b.type}</span>}
-                </div>
-              </button>
-            ))}
+        {isAdmin ? (
+          <>
+            <button
+              onClick={() => setShowBuildingMenu(!showBuildingMenu)}
+              className="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 rounded-lg px-3 py-1.5 text-sm transition-colors"
+            >
+              <Building2 className="h-4 w-4 text-slate-400" />
+              <span className="max-w-[180px] truncate">{selectedBuilding?.name ?? 'Select building'}</span>
+              <ChevronDown className="h-3 w-3 text-slate-400" />
+            </button>
+            {showBuildingMenu && buildings.length > 0 && (
+              <div className="absolute top-full mt-1 left-0 bg-slate-700 border border-slate-600 rounded-lg shadow-xl py-1 min-w-[280px] z-50">
+                {buildings.map((b) => {
+                  const bv = b.vertical || 'office';
+                  const BIcon = VERTICAL_ICONS[bv] ?? Building2;
+                  return (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        onBuildingChange(b.id);
+                        setShowBuildingMenu(false);
+                      }}
+                      className={`w-full text-left px-3 py-2.5 text-sm hover:bg-slate-600 ${b.id === selectedBuildingId ? 'bg-slate-600/50' : ''}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <BIcon className={`h-4 w-4 flex-shrink-0 ${b.id === selectedBuildingId ? 'text-blue-400' : 'text-slate-400'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className={`truncate ${b.id === selectedBuildingId ? 'text-blue-400 font-medium' : 'text-slate-200'}`}>{b.name}</div>
+                          <div className="text-[10px] text-slate-500">{b.address}</div>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </>
+        ) : (
+          /* Non-admin: locked to their assigned building */
+          <div className="flex items-center gap-2 bg-slate-700/50 rounded-lg px-3 py-1.5 text-sm cursor-default">
+            <Building2 className="h-4 w-4 text-slate-400" />
+            <span className="max-w-[180px] truncate text-slate-200">{selectedBuilding?.name ?? 'Loading...'}</span>
           </div>
         )}
       </div>

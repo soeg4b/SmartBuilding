@@ -19,6 +19,7 @@ export interface User {
   name: string;
   role: UserRole;
   buildingId?: string | null;
+  buildingVertical?: 'data_center' | 'office' | 'hospitality' | null;
   isActive: boolean;
   lastLoginAt?: string | null;
   createdAt: string;
