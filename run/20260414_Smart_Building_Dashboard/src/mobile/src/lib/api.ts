@@ -1,10 +1,16 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 import { getApiUrl } from '../config/api';
 
 const TOKEN_KEY = 'sb_access_token';
 
+const isWeb = Platform.OS === 'web';
+
 export async function getStoredToken(): Promise<string | null> {
   try {
+    if (isWeb) {
+      return typeof window !== 'undefined' ? window.localStorage.getItem(TOKEN_KEY) : null;
+    }
     return await SecureStore.getItemAsync(TOKEN_KEY);
   } catch {
     return null;
@@ -12,10 +18,18 @@ export async function getStoredToken(): Promise<string | null> {
 }
 
 export async function setStoredToken(token: string): Promise<void> {
+  if (isWeb) {
+    if (typeof window !== 'undefined') window.localStorage.setItem(TOKEN_KEY, token);
+    return;
+  }
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
 export async function removeStoredToken(): Promise<void> {
+  if (isWeb) {
+    if (typeof window !== 'undefined') window.localStorage.removeItem(TOKEN_KEY);
+    return;
+  }
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 }
 

@@ -1,5 +1,5 @@
-﻿// =============================================================================
-// Smart Building Dashboard — Standalone Demo Server
+// =============================================================================
+// Smart Building Dashboard � Standalone Demo Server
 // No PostgreSQL, Redis, or MQTT required. Pure Node.js built-in modules only.
 // Run: node demo-server.mjs
 // =============================================================================
@@ -103,23 +103,23 @@ function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 // Mock Data
 // =============================================================================
 const USERS = [
-  // Platform / Operator side — sys_admin sees ALL buildings
+  // Platform / Operator side � sys_admin sees ALL buildings
   { id: 'u1', email: 'admin@integra.com', name: 'System Administrator', role: 'sys_admin', password: 'admin123', isActive: true, buildingId: 'b1', lastLoginAt: new Date().toISOString(), createdAt: '2026-01-01T00:00:00Z', mfaEnabled: true, biometricEnrolled: true },
   { id: 'u2', email: 'cfo@integra.com', name: 'CFO Executive', role: 'financial_decision_maker', password: 'cfo123', isActive: true, buildingId: 'b1', lastLoginAt: new Date().toISOString(), createdAt: '2026-01-15T00:00:00Z', mfaEnabled: true, biometricEnrolled: false },
-  // Technicians — each assigned to one building type
+  // Technicians � each assigned to one building type
   { id: 'u3', email: 'tech@integra.com', name: 'Tech DC - Mike', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b1', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
   { id: 'u3b', email: 'tech-office@integra.com', name: 'Tech Office - Andi', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b2', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
   { id: 'u3c', email: 'tech-hotel@integra.com', name: 'Tech Hotel - Dewi', role: 'technician', password: 'tech123', isActive: true, buildingId: 'b3', lastLoginAt: null, createdAt: '2026-02-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
   { id: 'u4', email: 'manager@integra.com', name: 'Building Manager Sari', role: 'building_manager', password: 'manager123', isActive: true, buildingId: 'b1', lastLoginAt: new Date().toISOString(), createdAt: '2026-02-05T00:00:00Z', mfaEnabled: true, biometricEnrolled: true },
   { id: 'u5', email: 'security@integra.com', name: 'Security Officer Joko', role: 'security_officer', password: 'security123', isActive: true, buildingId: 'b1', lastLoginAt: null, createdAt: '2026-02-10T00:00:00Z', mfaEnabled: true, biometricEnrolled: true },
-  // Tenant — assigned to office building (b2)
+  // Tenant � assigned to office building (b2)
   { id: 'u6', email: 'tenant@integra.com', name: 'Tenant Rina (Acme Corp)', role: 'tenant', password: 'tenant123', isActive: true, buildingId: 'b2', tenantCompany: 'Acme Corp', floorId: 'f3', lastLoginAt: null, createdAt: '2026-03-01T00:00:00Z', mfaEnabled: false, biometricEnrolled: true },
-  // Guest — assigned to hospitality building (b3)
+  // Guest � assigned to hospitality building (b3)
   { id: 'u7', email: 'guest@integra.com', name: 'Hotel Guest Budi', role: 'guest', password: 'guest123', isActive: true, buildingId: 'b3', roomNumber: '1208', checkIn: '2026-04-19', checkOut: '2026-04-22', lastLoginAt: null, createdAt: '2026-04-19T00:00:00Z', mfaEnabled: false, biometricEnrolled: false },
 ];
 
 const BUILDINGS = [
-  // ── Data Center buildings ──
+  // -- Data Center buildings --
   {
     id: 'b1',
     name: 'DC Cikarang Tower',
@@ -147,7 +147,7 @@ const BUILDINGS = [
     totalFloors: 3,
     totalArea: 4800,
   },
-  // ── Office buildings ──
+  // -- Office buildings --
   {
     id: 'b2',
     name: 'Sudirman Office Tower',
@@ -175,7 +175,7 @@ const BUILDINGS = [
     totalFloors: 12,
     totalArea: 15000,
   },
-  // ── Hospitality buildings ──
+  // -- Hospitality buildings --
   {
     id: 'b3',
     name: 'Nusa Dua Beach Resort',
@@ -242,7 +242,7 @@ const FLOOR_PLANS = [
 // IoT Devices placed on the Digital Twin (CAD overlay)
 // =============================================================================
 const IOT_DEVICE_TYPES = {
-  temperature: { unit: '°C',  min: 18,  max: 32,   warn: 28,   crit: 30 },
+  temperature: { unit: '�C',  min: 18,  max: 32,   warn: 28,   crit: 30 },
   humidity:    { unit: '%',   min: 30,  max: 80,   warn: 70,   crit: 75 },
   co2:         { unit: 'ppm', min: 400, max: 1500, warn: 1000, crit: 1200 },
   power:       { unit: 'kW',  min: 0.1, max: 12,   warn: 9,    crit: 11 },
@@ -269,20 +269,20 @@ const IOT_DEVICE_TYPES = {
   occupancy:     { unit: 'ppl', min: 0,  max: 300, warn: 250, crit: 280 },
 };
 
-// ─── IoT Sensor Categories ──────────────────────────────────────────────────
+// --- IoT Sensor Categories --------------------------------------------------
 // Each sensor has a category and heartbeat (polling interval in seconds).
-// mission_critical  → real-time alerting, immediate response needed
-// metering          → periodic measurement, for analytics & dashboards
+// mission_critical  ? real-time alerting, immediate response needed
+// metering          ? periodic measurement, for analytics & dashboards
 const IOT_SENSOR_CATEGORIES = {
   mission_critical: {
     label: 'Mission Critical',
-    description: 'Real-time alert sensors — require immediate response when triggered',
+    description: 'Real-time alert sensors � require immediate response when triggered',
     defaultHeartbeatSec: 5,
     color: '#ef4444', // red
   },
   metering: {
     label: 'Metering',
-    description: 'Periodic measurement sensors — for analytics, dashboards & reporting',
+    description: 'Periodic measurement sensors � for analytics, dashboards & reporting',
     defaultHeartbeatSec: 30,
     color: '#3b82f6', // blue
   },
@@ -304,7 +304,7 @@ const IOT_TYPE_CATEGORY_MAP = {
   // Metering sensors
   temperature:   { category: 'metering', heartbeatSec: 30,  label: 'Temperature' },
   humidity:      { category: 'metering', heartbeatSec: 30,  label: 'Humidity' },
-  co2:           { category: 'metering', heartbeatSec: 30,  label: 'CO₂' },
+  co2:           { category: 'metering', heartbeatSec: 30,  label: 'CO2' },
   power:         { category: 'metering', heartbeatSec: 15,  label: 'Power Meter' },
   light:         { category: 'metering', heartbeatSec: 60,  label: 'Light Sensor' },
   water:         { category: 'metering', heartbeatSec: 15,  label: 'Water Flow' },
@@ -550,17 +550,17 @@ const KB_PRODUCTS = [
   {
     id: 'kb-1', name: 'HVAC AHU-3000', serialNumber: 'HV-2024-001', manufacturer: 'Daikin', model: 'AHU-3000', category: 'HVAC',
     procedures: [
-      { id: 'proc-1a', title: 'Compressor Troubleshooting', difficulty: 'hard', estimatedTime: '45–60 min', requiredTools: ['Multimeter', 'Manifold gauge set', 'Insulation resistance tester', 'Torque wrench'], steps: [ { number: 1, description: 'Isolate the AHU from the electrical supply and apply LOTO procedure.' }, { number: 2, description: 'Verify 0 V at the compressor terminals.', warning: 'Ensure capacitors are discharged.' }, { number: 3, description: 'Measure winding resistance between C-S, C-R, and S-R terminals.' }, { number: 4, description: 'Measure insulation resistance. Must be ≥ 500 MΩ.', caution: 'Below 2 MΩ indicates imminent failure.' }, { number: 5, description: 'Check suction and discharge pressures.' }, { number: 6, description: 'Restore power and monitor amp draw.' } ] },
-      { id: 'proc-1b', title: 'Filter Replacement', difficulty: 'easy', estimatedTime: '15–20 min', requiredTools: ['Screwdriver', 'Replacement filter (MERV-13)', 'Vacuum cleaner'], steps: [ { number: 1, description: 'Turn off the AHU fan.' }, { number: 2, description: 'Open the filter access panel.' }, { number: 3, description: 'Slide out old filter and vacuum debris.' }, { number: 4, description: 'Insert new filter matching airflow arrow.', warning: 'Incorrect orientation reduces efficiency by 40%.' }, { number: 5, description: 'Close panel and restart fan.' } ] },
+      { id: 'proc-1a', title: 'Compressor Troubleshooting', difficulty: 'hard', estimatedTime: '45�60 min', requiredTools: ['Multimeter', 'Manifold gauge set', 'Insulation resistance tester', 'Torque wrench'], steps: [ { number: 1, description: 'Isolate the AHU from the electrical supply and apply LOTO procedure.' }, { number: 2, description: 'Verify 0 V at the compressor terminals.', warning: 'Ensure capacitors are discharged.' }, { number: 3, description: 'Measure winding resistance between C-S, C-R, and S-R terminals.' }, { number: 4, description: 'Measure insulation resistance. Must be = 500 MO.', caution: 'Below 2 MO indicates imminent failure.' }, { number: 5, description: 'Check suction and discharge pressures.' }, { number: 6, description: 'Restore power and monitor amp draw.' } ] },
+      { id: 'proc-1b', title: 'Filter Replacement', difficulty: 'easy', estimatedTime: '15�20 min', requiredTools: ['Screwdriver', 'Replacement filter (MERV-13)', 'Vacuum cleaner'], steps: [ { number: 1, description: 'Turn off the AHU fan.' }, { number: 2, description: 'Open the filter access panel.' }, { number: 3, description: 'Slide out old filter and vacuum debris.' }, { number: 4, description: 'Insert new filter matching airflow arrow.', warning: 'Incorrect orientation reduces efficiency by 40%.' }, { number: 5, description: 'Close panel and restart fan.' } ] },
     ],
     documents: [ { id: 'doc-1a', title: 'AHU-3000 Service Manual', type: 'manual', url: '#' }, { id: 'doc-1b', title: 'R-410A Safety Data Sheet', type: 'datasheet', url: '#' } ],
-    faqs: [ { question: 'How often should filters be replaced?', answer: 'Every 3 months under normal conditions.' }, { question: 'What is the normal operating superheat?', answer: '10–15 °F at the evaporator outlet.' } ]
+    faqs: [ { question: 'How often should filters be replaced?', answer: 'Every 3 months under normal conditions.' }, { question: 'What is the normal operating superheat?', answer: '10�15 �F at the evaporator outlet.' } ]
   },
   {
     id: 'kb-2', name: 'Chiller CH-500X', serialNumber: 'CH-2023-001', manufacturer: 'Carrier', model: 'CH-500X', category: 'Chiller',
     procedures: [
-      { id: 'proc-2a', title: 'Cooling Capacity Loss Diagnosis', difficulty: 'hard', estimatedTime: '60–90 min', requiredTools: ['Manifold gauge set', 'Flow meter', 'Temperature logger'], steps: [ { number: 1, description: 'Record chilled water temperatures and flow rate.' }, { number: 2, description: 'Calculate capacity: Q = flow × 500 × ΔT.' }, { number: 3, description: 'Check condenser water temperatures.' }, { number: 4, description: 'Inspect suction and discharge pressures.' } ] },
-      { id: 'proc-2b', title: 'Condenser Tube Cleaning', difficulty: 'medium', estimatedTime: '3–4 hours', requiredTools: ['Tube brushes', 'High-pressure washer', 'End-cover gaskets'], steps: [ { number: 1, description: 'Shut down chiller and close isolation valves.' }, { number: 2, description: 'Drain condenser waterbox.', warning: 'Water may be extremely hot — allow 30 min cool-down.' }, { number: 3, description: 'Remove waterbox end covers.' }, { number: 4, description: 'Brush and flush each tube.' }, { number: 5, description: 'Replace gaskets and re-torque bolts.' } ] },
+      { id: 'proc-2a', title: 'Cooling Capacity Loss Diagnosis', difficulty: 'hard', estimatedTime: '60�90 min', requiredTools: ['Manifold gauge set', 'Flow meter', 'Temperature logger'], steps: [ { number: 1, description: 'Record chilled water temperatures and flow rate.' }, { number: 2, description: 'Calculate capacity: Q = flow � 500 � ?T.' }, { number: 3, description: 'Check condenser water temperatures.' }, { number: 4, description: 'Inspect suction and discharge pressures.' } ] },
+      { id: 'proc-2b', title: 'Condenser Tube Cleaning', difficulty: 'medium', estimatedTime: '3�4 hours', requiredTools: ['Tube brushes', 'High-pressure washer', 'End-cover gaskets'], steps: [ { number: 1, description: 'Shut down chiller and close isolation valves.' }, { number: 2, description: 'Drain condenser waterbox.', warning: 'Water may be extremely hot � allow 30 min cool-down.' }, { number: 3, description: 'Remove waterbox end covers.' }, { number: 4, description: 'Brush and flush each tube.' }, { number: 5, description: 'Replace gaskets and re-torque bolts.' } ] },
     ],
     documents: [ { id: 'doc-2a', title: 'CH-500X O&M Manual', type: 'manual', url: '#' } ],
     faqs: [ { question: 'Recommended condenser cleaning interval?', answer: 'Semi-annually for cooling tower systems.' } ]
@@ -568,27 +568,27 @@ const KB_PRODUCTS = [
   {
     id: 'kb-3', name: 'UPS Symmetra PX', serialNumber: 'UPS-2024-001', manufacturer: 'APC / Schneider Electric', model: 'Symmetra PX 100kW', category: 'Power',
     procedures: [
-      { id: 'proc-3a', title: 'Battery Module Replacement', difficulty: 'medium', estimatedTime: '20–30 min per module', requiredTools: ['Insulated gloves', 'Battery lifting handle', 'Multimeter'], steps: [ { number: 1, description: 'Identify failing module from management interface.' }, { number: 2, description: 'Ensure UPS is on mains power.', caution: 'Replacing on battery will cause load drop.' }, { number: 3, description: 'Put on Class 0 insulated gloves.' }, { number: 4, description: 'Slide out old module and insert replacement.' }, { number: 5, description: 'Initiate runtime calibration.' } ] },
+      { id: 'proc-3a', title: 'Battery Module Replacement', difficulty: 'medium', estimatedTime: '20�30 min per module', requiredTools: ['Insulated gloves', 'Battery lifting handle', 'Multimeter'], steps: [ { number: 1, description: 'Identify failing module from management interface.' }, { number: 2, description: 'Ensure UPS is on mains power.', caution: 'Replacing on battery will cause load drop.' }, { number: 3, description: 'Put on Class 0 insulated gloves.' }, { number: 4, description: 'Slide out old module and insert replacement.' }, { number: 5, description: 'Initiate runtime calibration.' } ] },
     ],
     documents: [ { id: 'doc-3a', title: 'Symmetra PX User Manual', type: 'manual', url: '#' } ],
-    faqs: [ { question: 'How long do UPS batteries last?', answer: '3–5 years for standard VRLA batteries.' } ]
+    faqs: [ { question: 'How long do UPS batteries last?', answer: '3�5 years for standard VRLA batteries.' } ]
   },
   {
     id: 'kb-4', name: 'Elevator Gen3', serialNumber: 'EL-2022-001', manufacturer: 'Otis', model: 'Gen3', category: 'Elevator',
     procedures: [
-      { id: 'proc-4a', title: 'Door Alignment Adjustment', difficulty: 'medium', estimatedTime: '30–45 min', requiredTools: ['Door gap gauge', 'Allen key set', 'Level'], steps: [ { number: 1, description: 'Put elevator in inspection mode.' }, { number: 2, description: 'Measure car/landing door gap with feeler gauge.' }, { number: 3, description: 'Adjust door hanger rollers as needed.' }, { number: 4, description: 'Run doors through 10 open/close cycles.', warning: 'Keep hands clear of door track.' } ] },
+      { id: 'proc-4a', title: 'Door Alignment Adjustment', difficulty: 'medium', estimatedTime: '30�45 min', requiredTools: ['Door gap gauge', 'Allen key set', 'Level'], steps: [ { number: 1, description: 'Put elevator in inspection mode.' }, { number: 2, description: 'Measure car/landing door gap with feeler gauge.' }, { number: 3, description: 'Adjust door hanger rollers as needed.' }, { number: 4, description: 'Run doors through 10 open/close cycles.', warning: 'Keep hands clear of door track.' } ] },
     ],
     documents: [ { id: 'doc-4a', title: 'Gen3 Maintenance Manual', type: 'manual', url: '#' } ],
-    faqs: [ { question: 'Elevator stops between floors — likely cause?', answer: 'Door interlock switch failure is most common. Check controller fault log.' } ]
+    faqs: [ { question: 'Elevator stops between floors � likely cause?', answer: 'Door interlock switch failure is most common. Check controller fault log.' } ]
   },
   {
     id: 'kb-5', name: 'Fire Panel FP-2000', serialNumber: 'FS-2023-001', manufacturer: 'Honeywell', model: 'FP-2000', category: 'Fire Safety',
     procedures: [
       { id: 'proc-5a', title: 'Smoke Detector Calibration', difficulty: 'medium', estimatedTime: '5 min per detector', requiredTools: ['Calibrated smoke aerosol', 'Extension pole', 'Panel access code'], steps: [ { number: 1, description: 'Put zone into TEST mode.' }, { number: 2, description: 'Position aerosol cup over detector and dispense.' }, { number: 3, description: 'Detector should alarm within 30 seconds.' }, { number: 4, description: 'If no alarm, check sensitivity or replace.', warning: 'Do NOT increase sensitivity beyond OEM spec.' }, { number: 5, description: 'Return zone to NORMAL mode.' } ] },
-      { id: 'proc-5b', title: 'Battery Test & Replacement', difficulty: 'easy', estimatedTime: '15–20 min', requiredTools: ['Multimeter', 'Replacement batteries (2×12V 7Ah)', 'Screwdriver'], steps: [ { number: 1, description: 'Notify monitoring company.' }, { number: 2, description: 'Measure each battery voltage — below 12.0 VDC = replace.' }, { number: 3, description: 'Disconnect old batteries (negative first).', warning: 'SLA batteries contain sulfuric acid.' }, { number: 4, description: 'Connect new batteries (positive first).' }, { number: 5, description: 'Run supervised battery load test.' } ] },
+      { id: 'proc-5b', title: 'Battery Test & Replacement', difficulty: 'easy', estimatedTime: '15�20 min', requiredTools: ['Multimeter', 'Replacement batteries (2�12V 7Ah)', 'Screwdriver'], steps: [ { number: 1, description: 'Notify monitoring company.' }, { number: 2, description: 'Measure each battery voltage � below 12.0 VDC = replace.' }, { number: 3, description: 'Disconnect old batteries (negative first).', warning: 'SLA batteries contain sulfuric acid.' }, { number: 4, description: 'Connect new batteries (positive first).' }, { number: 5, description: 'Run supervised battery load test.' } ] },
     ],
     documents: [ { id: 'doc-5a', title: 'FP-2000 Programming Guide', type: 'manual', url: '#' }, { id: 'doc-5b', title: 'NFPA 72 Quick Reference', type: 'datasheet', url: '#' } ],
-    faqs: [ { question: 'How often should panel batteries be replaced?', answer: 'Every 3–4 years regardless of test results.' } ]
+    faqs: [ { question: 'How often should panel batteries be replaced?', answer: 'Every 3�4 years regardless of test results.' } ]
   },
 ];
 
@@ -618,7 +618,7 @@ const HSE_PPE = [
 ];
 
 // =============================================================================
-// PDF Builder (pure Node.js, no dependencies — generates valid PDF 1.4)
+// PDF Builder (pure Node.js, no dependencies � generates valid PDF 1.4)
 // =============================================================================
 function buildPdf(renderFn) {
   const PW = 595, PH = 842, ML = 50, MR = 50, MT = 55, MB = 50;
@@ -918,10 +918,24 @@ function verifyToken(token) {
 // =============================================================================
 // HTTP helpers
 // =============================================================================
+const ALLOWED_ORIGINS = new Set([
+  'http://localhost:5001',
+  'http://localhost:5002',
+  'http://localhost:5003',
+  'http://127.0.0.1:5001',
+  'http://127.0.0.1:5002',
+  'http://127.0.0.1:5003',
+]);
+let CURRENT_REQ_ORIGIN = 'http://localhost:5001';
+function pickAllowedOrigin(req) {
+  const origin = req && req.headers && req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) return origin;
+  return 'http://localhost:5001';
+}
 function json(res, data, status = 200, extraHeaders = {}) {
   const headers = {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': 'http://localhost:5001',
+    'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN,
     'Access-Control-Allow-Credentials': 'true',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
@@ -999,7 +1013,7 @@ function zoneEnvironmental() {
     return {
       id: z.id, name: z.name, floorId: z.floorId, floorName: z.floorName, status: overall,
       readings: {
-        temperature: { value: t, unit: '°C', status: ts },
+        temperature: { value: t, unit: '�C', status: ts },
         humidity: { value: h, unit: '%', status: hs },
         co2: { value: c, unit: 'ppm', status: cs },
       },
@@ -1031,7 +1045,7 @@ function operationsDashboard() {
 
 function technicianDashboard() {
   return {
-    assignedAssets: EQUIPMENT.slice(0, 5).map(e => ({ id: e.id, name: e.name, type: e.type, healthStatus: e.healthStatus, keyMetric: `${rnd(60, 99)}% efficiency`, location: `${e.location.floorName} — ${e.location.zoneName || 'Rooftop'}` })),
+    assignedAssets: EQUIPMENT.slice(0, 5).map(e => ({ id: e.id, name: e.name, type: e.type, healthStatus: e.healthStatus, keyMetric: `${rnd(60, 99)}% efficiency`, location: `${e.location.floorName} � ${e.location.zoneName || 'Rooftop'}` })),
     pendingAlerts: ALERTS.filter(a => a.status === 'active').slice(0, 6).map(a => ({ id: a.id, severity: a.severity, message: a.message, timestamp: a.triggeredAt })),
     recentActivity: [
       { type: 'maintenance', message: 'HVAC Unit #1 filter replaced', timestamp: new Date(Date.now() - 7200000).toISOString() },
@@ -1048,7 +1062,7 @@ function equipmentDetail(eq) {
       id: `sensor-${eq.id}-${i}`, name: `${eq.name} Sensor ${i + 1}`,
       type: pick(['temperature', 'vibration', 'current', 'pressure']),
       status: pick(['online', 'online', 'online', 'stale']),
-      lastValue: rnd(10, 95), unit: pick(['°C', 'mm/s', 'A', 'bar']),
+      lastValue: rnd(10, 95), unit: pick(['�C', 'mm/s', 'A', 'bar']),
     })),
     metrics: Array.from({ length: 10 }, (_, i) => ({
       metricType: pick(['runtime_hours', 'efficiency', 'power_draw']),
@@ -1061,26 +1075,26 @@ function equipmentDetail(eq) {
 function floorPlanSensors(planId) {
   const sensorLayouts = {
     fp1: [
-      { id: 'sp-g1', sensorId: 's-g1', x: 18, y: 38, rotation: 0, sensor: { name: 'Lobby Temp', type: 'temperature', status: 'online', lastValue: 23.5, unit: '°C' } },
+      { id: 'sp-g1', sensorId: 's-g1', x: 18, y: 38, rotation: 0, sensor: { name: 'Lobby Temp', type: 'temperature', status: 'online', lastValue: 23.5, unit: '�C' } },
       { id: 'sp-g2', sensorId: 's-g2', x: 22, y: 55, rotation: 0, sensor: { name: 'Lobby Humidity', type: 'humidity', status: 'online', lastValue: 52, unit: '%' } },
-      { id: 'sp-g3', sensorId: 's-g3', x: 72, y: 35, rotation: 0, sensor: { name: 'Server Room Temp', type: 'temperature', status: 'online', lastValue: 19.2, unit: '°C' } },
+      { id: 'sp-g3', sensorId: 's-g3', x: 72, y: 35, rotation: 0, sensor: { name: 'Server Room Temp', type: 'temperature', status: 'online', lastValue: 19.2, unit: '�C' } },
       { id: 'sp-g4', sensorId: 's-g4', x: 78, y: 50, rotation: 0, sensor: { name: 'Server Room Humidity', type: 'humidity', status: 'online', lastValue: 38, unit: '%' } },
       { id: 'sp-g5', sensorId: 's-g5', x: 75, y: 65, rotation: 0, sensor: { name: 'Server CO2', type: 'co2', status: 'stale', lastValue: 410, unit: 'ppm' } },
       { id: 'sp-g6', sensorId: 's-g6', x: 40, y: 80, rotation: 0, sensor: { name: 'Security Motion', type: 'motion', status: 'online', lastValue: 1, unit: '' } },
-      { id: 'sp-g7', sensorId: 's-g7', x: 55, y: 35, rotation: 0, sensor: { name: 'Reception Temp', type: 'temperature', status: 'offline', lastValue: null, unit: '°C' } },
+      { id: 'sp-g7', sensorId: 's-g7', x: 55, y: 35, rotation: 0, sensor: { name: 'Reception Temp', type: 'temperature', status: 'offline', lastValue: null, unit: '�C' } },
     ],
     fp2: [
-      { id: 'sp-1a', sensorId: 's-1a', x: 25, y: 40, rotation: 0, sensor: { name: 'Office A Temp', type: 'temperature', status: 'online', lastValue: 24.1, unit: '°C' } },
+      { id: 'sp-1a', sensorId: 's-1a', x: 25, y: 40, rotation: 0, sensor: { name: 'Office A Temp', type: 'temperature', status: 'online', lastValue: 24.1, unit: '�C' } },
       { id: 'sp-1b', sensorId: 's-1b', x: 30, y: 55, rotation: 0, sensor: { name: 'Office A CO2', type: 'co2', status: 'online', lastValue: 680, unit: 'ppm' } },
-      { id: 'sp-1c', sensorId: 's-1c', x: 75, y: 30, rotation: 0, sensor: { name: 'Meeting Rm Temp', type: 'temperature', status: 'online', lastValue: 22.8, unit: '°C' } },
+      { id: 'sp-1c', sensorId: 's-1c', x: 75, y: 30, rotation: 0, sensor: { name: 'Meeting Rm Temp', type: 'temperature', status: 'online', lastValue: 22.8, unit: '�C' } },
       { id: 'sp-1d', sensorId: 's-1d', x: 80, y: 45, rotation: 0, sensor: { name: 'Meeting Rm Motion', type: 'motion', status: 'online', lastValue: 0, unit: '' } },
-      { id: 'sp-1e', sensorId: 's-1e', x: 50, y: 75, rotation: 0, sensor: { name: 'Corridor Temp', type: 'temperature', status: 'stale', lastValue: 25.3, unit: '°C' } },
+      { id: 'sp-1e', sensorId: 's-1e', x: 50, y: 75, rotation: 0, sensor: { name: 'Corridor Temp', type: 'temperature', status: 'stale', lastValue: 25.3, unit: '�C' } },
       { id: 'sp-1f', sensorId: 's-1f', x: 18, y: 72, rotation: 0, sensor: { name: 'Break Room Humidity', type: 'humidity', status: 'online', lastValue: 58, unit: '%' } },
     ],
     fp3: [
-      { id: 'sp-2a', sensorId: 's-2a', x: 22, y: 38, rotation: 0, sensor: { name: 'Office B Temp', type: 'temperature', status: 'online', lastValue: 23.8, unit: '°C' } },
+      { id: 'sp-2a', sensorId: 's-2a', x: 22, y: 38, rotation: 0, sensor: { name: 'Office B Temp', type: 'temperature', status: 'online', lastValue: 23.8, unit: '�C' } },
       { id: 'sp-2b', sensorId: 's-2b', x: 28, y: 55, rotation: 0, sensor: { name: 'Office B CO2', type: 'co2', status: 'online', lastValue: 720, unit: 'ppm' } },
-      { id: 'sp-2c', sensorId: 's-2c', x: 75, y: 35, rotation: 0, sensor: { name: 'Exec Suite Temp', type: 'temperature', status: 'online', lastValue: 22.0, unit: '°C' } },
+      { id: 'sp-2c', sensorId: 's-2c', x: 75, y: 35, rotation: 0, sensor: { name: 'Exec Suite Temp', type: 'temperature', status: 'online', lastValue: 22.0, unit: '�C' } },
       { id: 'sp-2d', sensorId: 's-2d', x: 78, y: 52, rotation: 0, sensor: { name: 'Exec Suite Humidity', type: 'humidity', status: 'online', lastValue: 45, unit: '%' } },
       { id: 'sp-2e', sensorId: 's-2e', x: 50, y: 80, rotation: 0, sensor: { name: 'Corridor Motion', type: 'motion', status: 'offline', lastValue: null, unit: '' } },
     ],
@@ -1146,7 +1160,7 @@ function generateFloorSensors(floorId) {
     let value = null, unit = '';
     if (isOnline) {
       switch (type) {
-        case 'temperature': value = rnd(18, 32); unit = '°C'; break;
+        case 'temperature': value = rnd(18, 32); unit = '�C'; break;
         case 'humidity': value = rnd(30, 80); unit = '%'; break;
         case 'co2': value = rndInt(300, 1500); unit = 'ppm'; break;
         case 'motion': value = Math.random() > 0.5 ? 1 : 0; unit = ''; break;
@@ -1297,11 +1311,12 @@ function digitalTwinLiveReadings() {
 async function handle(req, res) {
   const { pathname: path, params } = parseUrl(req.url);
   const method = req.method;
+  CURRENT_REQ_ORIGIN = pickAllowedOrigin(req);
 
   // CORS preflight
   if (method === 'OPTIONS') {
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': 'http://localhost:5001',
+      'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN,
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
@@ -1313,7 +1328,7 @@ async function handle(req, res) {
   // Health
   if (path === '/health') return json(res, { status: 'ok', timestamp: new Date().toISOString(), version: '1.0.0-demo', uptime: process.uptime() });
 
-  // ── Auth ──────────────────────────────────────────────────────────
+  // -- Auth ----------------------------------------------------------
   if (path === '/auth/login' && method === 'POST') {
     const body = await parseBody(req);
     const user = USERS.find(u => u.email === body.email && u.password === body.password);
@@ -1371,11 +1386,11 @@ async function handle(req, res) {
     return json(res, { data: safeUser(newUser) }, 201);
   }
 
-  // ── Protected routes ──────────────────────────────────────────────
+  // -- Protected routes ----------------------------------------------
   const user = getUser(req);
   if (!user) return json(res, { error: { code: 'UNAUTHORIZED', message: 'Not authenticated' } }, 401);
 
-  // ── IAM (Identity & Access Management) ────────────────────────────
+  // -- IAM (Identity & Access Management) ----------------------------
   // Immutable audit log of access events
   if (path === '/iam/access-events' && method === 'GET') {
     const now = Date.now();
@@ -1431,7 +1446,7 @@ async function handle(req, res) {
     return json(res, { data: { userId: user.id, mfaEnabled: true } });
   }
 
-  // ── Tenant self-service (booking, parking, helpdesk shortcuts) ────
+  // -- Tenant self-service (booking, parking, helpdesk shortcuts) ----
   if (path === '/tenant/me/summary' && method === 'GET') {
     return json(res, {
       data: {
@@ -1458,7 +1473,7 @@ async function handle(req, res) {
     });
   }
 
-  // ── Guest (hospitality) ───────────────────────────────────────────
+  // -- Guest (hospitality) -------------------------------------------
   if (path === '/guest/me/stay' && method === 'GET') {
     return json(res, {
       data: {
@@ -1520,7 +1535,7 @@ async function handle(req, res) {
     return json(res, { data: equipmentDetail(eq) });
   }
 
-  // ── Alert Storm & Incidents ───────────────────────────────────────
+  // -- Alert Storm & Incidents ---------------------------------------
   if (path === '/alerts/storm-status' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     return json(res, { data: { storm: STORM_STATE, config: THROTTLE_CONFIG } });
@@ -1691,7 +1706,7 @@ async function handle(req, res) {
     res.writeHead(200, {
       'Content-Type': contentType,
       'Content-Disposition': `inline; filename="${nodePath.basename(sourcePath)}"`,
-      'Access-Control-Allow-Origin': 'http://localhost:5001',
+      'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN,
       'Access-Control-Allow-Credentials': 'true',
     });
     return fs.createReadStream(sourcePath).pipe(res);
@@ -1702,7 +1717,7 @@ async function handle(req, res) {
       res.writeHead(200, {
         'Content-Type': 'image/svg+xml; charset=utf-8',
         'Cache-Control': 'private, max-age=300',
-        'Access-Control-Allow-Origin': 'http://localhost:5001',
+        'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN,
         'Access-Control-Allow-Credentials': 'true',
       });
       return res.end(svg);
@@ -1712,7 +1727,7 @@ async function handle(req, res) {
     }
   }
 
-  // Digital Twin — IoT devices placed on the CAD overlay
+  // Digital Twin � IoT devices placed on the CAD overlay
   if (path === '/digital-twin/iot-devices' && method === 'GET') {
     const floorId = params.floorId;
     let list = IOT_DEVICES;
@@ -1910,7 +1925,7 @@ async function handle(req, res) {
   const fpRoomMatch = path.match(/^\/floor-plans\/([^/]+)\/rooms$/);
   if (fpRoomMatch) return json(res, { data: FLOOR_PLAN_ROOMS[fpRoomMatch[1]] || [] });
 
-  // Buildings catalog — admin sees all (optionally filtered by ?vertical=), others see only their assigned building
+  // Buildings catalog � admin sees all (optionally filtered by ?vertical=), others see only their assigned building
   if (path === '/buildings' && method === 'GET') {
     if (user.role === 'sys_admin') {
       const vFilter = params.vertical;
@@ -1935,7 +1950,7 @@ async function handle(req, res) {
     const qs = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
     const sd = qs.startDate || '2026-03-16', ed = qs.endDate || '2026-04-16';
     const pdf = renderCompilationPdf(sd, ed, user);
-    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="Smart-Building-Report-${sd}-to-${ed}.pdf"`, 'Access-Control-Allow-Origin': 'http://localhost:5001', 'Access-Control-Allow-Credentials': 'true' });
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="Smart-Building-Report-${sd}-to-${ed}.pdf"`, 'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN, 'Access-Control-Allow-Credentials': 'true' });
     return res.end(pdf);
   }
 
@@ -1944,19 +1959,19 @@ async function handle(req, res) {
     const qs = Object.fromEntries(new URL(req.url, 'http://x').searchParams);
     const sd = qs.startDate || '2026-03-16', ed = qs.endDate || '2026-04-16';
     const pdf = renderEnergyPdf(sd, ed, user);
-    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="Energy-Report-${sd}-to-${ed}.pdf"`, 'Access-Control-Allow-Origin': 'http://localhost:5001', 'Access-Control-Allow-Credentials': 'true' });
+    res.writeHead(200, { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="Energy-Report-${sd}-to-${ed}.pdf"`, 'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN, 'Access-Control-Allow-Credentials': 'true' });
     return res.end(pdf);
   }
   if (path === '/reports/alerts/csv') {
     if (!checkAccess(['sys_admin', 'financial_decision_maker'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     const csv = 'id,severity,status,message,triggeredAt\n' + ALERTS.slice(0, 30).map(a => `${a.id},${a.severity},${a.status},"${a.message}",${a.triggeredAt}`).join('\n');
-    res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=alerts.csv', 'Access-Control-Allow-Origin': 'http://localhost:5001', 'Access-Control-Allow-Credentials': 'true' });
+    res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=alerts.csv', 'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN, 'Access-Control-Allow-Credentials': 'true' });
     return res.end(csv);
   }
   if (path === '/reports/sensors/csv') {
     if (!checkAccess(['sys_admin', 'financial_decision_maker'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
-    const csv = 'sensorId,type,value,unit,timestamp\n' + Array.from({ length: 20 }, (_, i) => `sensor-${i + 1},${pick(['temperature', 'humidity', 'co2'])},${rnd(10, 80)},${pick(['°C', '%', 'ppm'])},${new Date(Date.now() - i * 3600000).toISOString()}`).join('\n');
-    res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=sensors.csv', 'Access-Control-Allow-Origin': 'http://localhost:5001', 'Access-Control-Allow-Credentials': 'true' });
+    const csv = 'sensorId,type,value,unit,timestamp\n' + Array.from({ length: 20 }, (_, i) => `sensor-${i + 1},${pick(['temperature', 'humidity', 'co2'])},${rnd(10, 80)},${pick(['�C', '%', 'ppm'])},${new Date(Date.now() - i * 3600000).toISOString()}`).join('\n');
+    res.writeHead(200, { 'Content-Type': 'text/csv', 'Content-Disposition': 'attachment; filename=sensors.csv', 'Access-Control-Allow-Origin': CURRENT_REQ_ORIGIN, 'Access-Control-Allow-Credentials': 'true' });
     return res.end(csv);
   }
 
@@ -1980,7 +1995,7 @@ async function handle(req, res) {
     return json(res, { data: safeUser(target) });
   }
 
-  // ── Knowledge Base ────────────────────────────────────────────────
+  // -- Knowledge Base ------------------------------------------------
   if (path === '/knowledge-base/search' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     const q = (params.q || '').toLowerCase();
@@ -1993,7 +2008,7 @@ async function handle(req, res) {
   }
   if (path === '/knowledge-base/search' && method === 'POST') {
     if (!checkAccess(['sys_admin', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
-    // Image search — return random product
+    // Image search � return random product
     const idx = Math.floor(Math.random() * KB_PRODUCTS.length);
     return json(res, { data: [KB_PRODUCTS[idx]] });
   }
@@ -2005,7 +2020,7 @@ async function handle(req, res) {
     return json(res, { data: product });
   }
 
-  // ── HSE Compliance ────────────────────────────────────────────────
+  // -- HSE Compliance ------------------------------------------------
   if (path === '/hse/checklist/today' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     const entry = HSE_CHECKLISTS.find(c => c.userId === user.id && c.date === new Date().toISOString().slice(0, 10));
@@ -2048,7 +2063,7 @@ async function handle(req, res) {
     return json(res, { data: entries });
   }
 
-  // ── Digital Twin ──────────────────────────────────────────────────
+  // -- Digital Twin --------------------------------------------------
   if (path === '/digital-twin/building' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     return json(res, { data: digitalTwinBuilding() });
@@ -2068,7 +2083,7 @@ async function handle(req, res) {
     return json(res, { data: digitalTwinLiveReadings() });
   }
 
-  // ── Financial Optimization (CFO View) ─────────────────────────────
+  // -- Financial Optimization (CFO View) -----------------------------
   // RULES (see docs/business-rules.md):
   //   energyCostSavingsYoY = (lastYearKwh - thisYearKwh) * tariff
   //   revenueLeakageDetected = sum(parking + booking + energyReimbursement + fnb anomalies)
@@ -2087,7 +2102,7 @@ async function handle(req, res) {
     return json(res, { data: financialLeakage() });
   }
 
-  // ── Operational Excellence (OpEx) ─────────────────────────────────
+  // -- Operational Excellence (OpEx) ---------------------------------
   // RULES:
   //   MTTR (min)            = avg(resolvedAt - triggeredAt) over closed work orders, last 30d
   //   buildingHealthScore   = sum(weight(green=100, yellow=60, red=10)) / count(equipment)
@@ -2111,7 +2126,7 @@ async function handle(req, res) {
     return json(res, { data: opexWorkOrders() });
   }
 
-  // ── Hospitality (Rooms & Occupancy) ───────────────────────────────
+  // -- Hospitality (Rooms & Occupancy) -------------------------------
   // RULES:
   //   occupancy%   = (roomsOccupied / totalRooms) * 100
   //   ADR          = totalRoomRevenue / roomsSold       // Average Daily Rate
@@ -2142,7 +2157,7 @@ async function handle(req, res) {
     return json(res, { data: hospitalityRoomDetail(room) });
   }
 
-  // ── Tenant Helpdesk & Tickets ─────────────────────────────────────
+  // -- Tenant Helpdesk & Tickets -------------------------------------
   // RULES (see docs/business-rules.md):
   //   openTickets       = count(status IN ('open','in_progress','waiting_parts'))
   //   avgResolutionMin  = avg(resolvedAt - openedAt) over closed tickets, last 7d
@@ -2173,7 +2188,7 @@ async function handle(req, res) {
     return json(res, { data: helpdeskTicketDetail(t) });
   }
 
-  // ── Guest Management (Office + Hospitality) ───────────────────────
+  // -- Guest Management (Office + Hospitality) -----------------------
   // RULES:
   //   activeGuests      = count(VISITORS WHERE status='in_building')
   //   todayCheckIn      = count(VISITORS WHERE checkInAt::date = today)
@@ -2196,12 +2211,12 @@ async function handle(req, res) {
     return json(res, { data: guestPasses() });
   }
 
-  // ── Smart Parking & EV Charging ───────────────────────────────────
+  // -- Smart Parking & EV Charging -----------------------------------
   // RULES:
   //   occupancyPct   = (occupiedSlots / totalSlots) * 100
   //   evSessionsToday= count(EV_SESSIONS WHERE startedAt::date = today)
   //   anprAccuracy%  = (matchedPlates / totalPlateReads) * 100  (last 24h)
-  //   revenueToday   = Σ(parkingFees) + Σ(evChargingFees) for today
+  //   revenueToday   = S(parkingFees) + S(evChargingFees) for today
   if (path === '/parking/summary' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'building_manager', 'security_officer', 'financial_decision_maker'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     return json(res, { data: parkingSummary(), meta: { generatedAt: new Date().toISOString(), rulesVersion: '1.0' } });
@@ -2223,12 +2238,12 @@ async function handle(req, res) {
     return json(res, { data: parkingRevenue() });
   }
 
-  // ── Room Booking Engine ───────────────────────────────────────────
+  // -- Room Booking Engine -------------------------------------------
   // RULES:
   //   bookingsToday  = count(BOOKINGS WHERE startAt::date = today)
-  //   utilizationPct = Σ(bookedMinutes) / Σ(availableMinutes) * 100   (today, business hours 08–18)
+  //   utilizationPct = S(bookedMinutes) / S(availableMinutes) * 100   (today, business hours 08�18)
   //   noShowsPct     = noShowCount / bookingsToday * 100
-  //   hvacEnergySavedKwh = Σ(preCool/preHeat avoided baseline kWh) today
+  //   hvacEnergySavedKwh = S(preCool/preHeat avoided baseline kWh) today
   if (path === '/booking/summary' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'building_manager', 'tenant', 'financial_decision_maker'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     return json(res, { data: bookingSummary(), meta: { generatedAt: new Date().toISOString(), rulesVersion: '1.0' } });
@@ -2250,7 +2265,7 @@ async function handle(req, res) {
     return json(res, { data: bookingHvacEvents() });
   }
 
-  // ── Housekeeping Workflow (Hospitality) ───────────────────────────
+  // -- Housekeeping Workflow (Hospitality) ---------------------------
   // RULES:
   //   roomsToClean       = count(HOTEL_ROOMS WHERE status='vacant_dirty' OR (occupied AND checkOut=today))
   //   avgCleanMin        = avg(completedAt - assignedAt) over CLEAN_TASKS today
@@ -2276,7 +2291,7 @@ async function handle(req, res) {
     return json(res, { data: housekeepingInspections() });
   }
 
-  // ── Guest Services (Hospitality) ──────────────────────────────────
+  // -- Guest Services (Hospitality) ----------------------------------
   // RULES:
   //   openRequests   = count(GUEST_REQUESTS WHERE status IN ('open','in_progress'))
   //   avgResponseMin = avg(firstResponseAt - openedAt) over GUEST_REQUESTS today
@@ -2302,13 +2317,13 @@ async function handle(req, res) {
     return json(res, { data: guestServicesCsat() });
   }
 
-  // ── Data Center · Cooling & PUE ───────────────────────────────────
+  // -- Data Center � Cooling & PUE -----------------------------------
   // RULES:
-  //   PUE         = totalFacilityKw / itLoadKw                                  (lower = better, target ≤ 1.4)
+  //   PUE         = totalFacilityKw / itLoadKw                                  (lower = better, target = 1.4)
   //   CRAC up     = count(CRAC_UNITS WHERE status='green') / total
-  //   chilledΔt   = avg(returnTempC - supplyTempC) across loops               (target 6–10 °C)
-  //   coldAisleC  = avg(coldAisleSensors)                                      (band 18–24 °C ASHRAE A1)
-  //   N+1 OK      = activeUnits ≤ totalUnits − 1 (one redundant available)
+  //   chilled?t   = avg(returnTempC - supplyTempC) across loops               (target 6�10 �C)
+  //   coldAisleC  = avg(coldAisleSensors)                                      (band 18�24 �C ASHRAE A1)
+  //   N+1 OK      = activeUnits = totalUnits - 1 (one redundant available)
   if (path === '/datacenter/cooling/summary' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'building_manager', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     return json(res, { data: coolingSummary(), meta: { generatedAt: new Date().toISOString(), rulesVersion: '1.0' } });
@@ -2334,7 +2349,7 @@ async function handle(req, res) {
     return json(res, { data: coolingRedundancy() });
   }
 
-  // ── Housekeeping Workflow (Hospitality) ───────────────────────────
+  // -- Housekeeping Workflow (Hospitality) ---------------------------
   // RULES:
   //   roomsToClean       = count(HOTEL_ROOMS WHERE status='vacant_dirty' OR (occupied AND checkOut=today))
   //   avgCleanMin        = avg(completedAt - assignedAt) over CLEAN_TASKS today
@@ -2360,7 +2375,7 @@ async function handle(req, res) {
     return json(res, { data: housekeepingInspections() });
   }
 
-  // ── Guest Services (Hospitality) ──────────────────────────────────
+  // -- Guest Services (Hospitality) ----------------------------------
   // RULES:
   //   openRequests   = count(GUEST_REQUESTS WHERE status IN ('open','in_progress'))
   //   avgResponseMin = avg(firstResponseAt - openedAt) over GUEST_REQUESTS today
@@ -2386,13 +2401,13 @@ async function handle(req, res) {
     return json(res, { data: guestServicesCsat() });
   }
 
-  // ── Data Center · Cooling & PUE ───────────────────────────────────
+  // -- Data Center � Cooling & PUE -----------------------------------
   // RULES:
-  //   PUE         = totalFacilityKw / itLoadKw                                  (lower = better, target ≤ 1.4)
+  //   PUE         = totalFacilityKw / itLoadKw                                  (lower = better, target = 1.4)
   //   CRAC up     = count(CRAC_UNITS WHERE status='green') / total
-  //   chilledΔt   = avg(returnTempC - supplyTempC) across loops               (target 6–10 °C)
-  //   coldAisleC  = avg(coldAisleSensors)                                      (band 18–24 °C ASHRAE A1)
-  //   N+1 OK      = activeUnits ≤ totalUnits − 1 (one redundant available)
+  //   chilled?t   = avg(returnTempC - supplyTempC) across loops               (target 6�10 �C)
+  //   coldAisleC  = avg(coldAisleSensors)                                      (band 18�24 �C ASHRAE A1)
+  //   N+1 OK      = activeUnits = totalUnits - 1 (one redundant available)
   if (path === '/datacenter/cooling/summary' && method === 'GET') {
     if (!checkAccess(['sys_admin', 'building_manager', 'technician'])(user)) return json(res, { error: { code: 'FORBIDDEN', message: 'Access denied' } }, 403);
     return json(res, { data: coolingSummary(), meta: { generatedAt: new Date().toISOString(), rulesVersion: '1.0' } });
@@ -2423,7 +2438,7 @@ async function handle(req, res) {
 }
 
 // =============================================================================
-// Financial / OpEx / Hospitality — deterministic mock data + computed KPIs
+// Financial / OpEx / Hospitality � deterministic mock data + computed KPIs
 // =============================================================================
 const FIN_BASELINE = {
   energyTariffPerKwh: 1450, // IDR
@@ -2498,15 +2513,15 @@ const HOTEL_ROOMS = buildHotelRooms();
 function financialSummary() {
   const f = FIN_BASELINE;
   const energySavings = (f.lastYearAnnualKwh - f.thisYearAnnualKwh) * f.energyTariffPerKwh;
-  const energySavingsUsd = Math.round(energySavings / 16400); // IDR→USD demo rate
+  const energySavingsUsd = Math.round(energySavings / 16400); // IDR?USD demo rate
   const leakage = FIN_LEAKAGE.reduce((s, x) => s + x.amount, 0);
   const opexReductionPct = -((f.baselineOpex - f.currentOpex) / f.baselineOpex) * 100;
   const roiPct = (f.annualNoi / f.assetBookValue) * 100;
   return {
     kpis: {
-      energyCostSavingsYoY: { value: energySavingsUsd, currency: 'USD', deltaPct: 22, formula: '(lastYearKwh − thisYearKwh) × tariff' },
-      revenueLeakageDetected: { value: leakage, currency: 'USD', windowDays: 30, formula: 'Σ(parking + booking + energyReimb + fnb)' },
-      opexReduction: { value: Math.round(opexReductionPct * 10) / 10, unit: '%', baselineYear: 2025, formula: '(baselineOpex − currentOpex) / baselineOpex' },
+      energyCostSavingsYoY: { value: energySavingsUsd, currency: 'USD', deltaPct: 22, formula: '(lastYearKwh - thisYearKwh) � tariff' },
+      revenueLeakageDetected: { value: leakage, currency: 'USD', windowDays: 30, formula: 'S(parking + booking + energyReimb + fnb)' },
+      opexReduction: { value: Math.round(opexReductionPct * 10) / 10, unit: '%', baselineYear: 2025, formula: '(baselineOpex - currentOpex) / baselineOpex' },
       buildingRoi: { value: Math.round(roiPct * 10) / 10, unit: '%', deltaPts: 3.1, formula: 'annualNOI / assetBookValue' },
     },
     inputs: f,
@@ -2547,10 +2562,10 @@ function opexSummary() {
   const nps = Math.round(((promoters - detractors) / total) * 100);
   return {
     kpis: {
-      mttr: { value: mttr, unit: 'min', deltaPct: -45, formula: 'avg(resolvedAt − triggeredAt) over closed work orders, 30d' },
-      buildingHealthScore: { value: score, max: 100, deltaPts: 6, formula: 'Σ weight(green=100, yellow=60, red=10) / N(equipment)' },
-      tenantSatisfaction: { value: satisfactionPct, unit: '%', nps, formula: '(promoters / totalRespondents) × 100' },
-      slaCompliance: { value: sla, unit: '%', deltaPct: 1.4, formula: '(workOrdersOnTime / totalWorkOrders) × 100' },
+      mttr: { value: mttr, unit: 'min', deltaPct: -45, formula: 'avg(resolvedAt - triggeredAt) over closed work orders, 30d' },
+      buildingHealthScore: { value: score, max: 100, deltaPts: 6, formula: 'S weight(green=100, yellow=60, red=10) / N(equipment)' },
+      tenantSatisfaction: { value: satisfactionPct, unit: '%', nps, formula: '(promoters / totalRespondents) � 100' },
+      slaCompliance: { value: sla, unit: '%', deltaPct: 1.4, formula: '(workOrdersOnTime / totalWorkOrders) � 100' },
     },
     survey: { promoters, passives, detractors, total },
     workOrderCount: wo.length,
@@ -2599,7 +2614,7 @@ function hospitalitySummary() {
   const stayOvers = HOTEL_ROOMS.filter(r => r.status === 'occupied' && r.checkOut && r.checkOut !== today).length;
   return {
     kpis: {
-      occupancy: { value: occupancyPct, unit: '%', deltaPts: 4, formula: '(roomsOccupied / availableRooms) × 100', drilldown: 'occupancy' },
+      occupancy: { value: occupancyPct, unit: '%', deltaPts: 4, formula: '(roomsOccupied / availableRooms) � 100', drilldown: 'occupancy' },
       adr:       { value: adr, currency: 'USD', deltaPct: 6, formula: 'totalRoomRevenue / roomsSold', drilldown: 'adr' },
       revpar:    { value: revpar, currency: 'USD', deltaPct: 12, formula: 'totalRoomRevenue / availableRooms', drilldown: 'revpar' },
       stayovers: { value: stayOvers, unit: 'rooms', label: 'tonight', formula: 'occupied AND checkOut != today', drilldown: 'stayovers' },
@@ -2661,12 +2676,12 @@ function hospitalityRoomDetail(room) {
 }
 
 // =============================================================================
-// Helpdesk / Guest Management / Parking / Booking — deterministic mock data
+// Helpdesk / Guest Management / Parking / Booking � deterministic mock data
 // =============================================================================
 
 const TODAY = '2026-04-20';
 
-// ── Tenant Helpdesk ─────────────────────────────────────────────────
+// -- Tenant Helpdesk -------------------------------------------------
 const HELPDESK_TICKETS = [
   { id: 'tk-101', title: 'AC too cold in 12-A',          tenant: 'Acme Corp',  category: 'HVAC',     priority: 'medium',   status: 'open',          openedAt: '2026-04-20T07:42:00Z', resolvedAt: null,                    slaMinutes: 60,  assignee: 'Tech B' },
   { id: 'tk-102', title: 'Lighting flicker meeting room',tenant: 'Globex',     category: 'Lighting', priority: 'low',      status: 'in_progress',   openedAt: '2026-04-20T08:05:00Z', resolvedAt: null,                    slaMinutes: 120, assignee: 'Tech A' },
@@ -2713,7 +2728,7 @@ function helpdeskSummary() {
   return {
     kpis: {
       openTickets:      { value: open.length,    deltaPct: -19, formula: "count(status IN ('open','in_progress'))" },
-      avgResolutionMin: { value: mttr,           unit: 'min', withinSla: true, formula: 'avg(resolvedAt − openedAt) over closed tickets, 7d' },
+      avgResolutionMin: { value: mttr,           unit: 'min', withinSla: true, formula: 'avg(resolvedAt - openedAt) over closed tickets, 7d' },
       slaBreaches7d:    { value: breaches,       windowDays: 7,                   formula: 'count(closed WHERE duration > slaMinutes)' },
       tenantCsat:       { value: csatAvg,        scale: 5, deltaPts: 0.2,        formula: 'avg(survey.rating) on 1..5 scale, 30d' },
     },
@@ -2760,7 +2775,7 @@ function helpdeskCsat() {
   return { avg, scale: 5, total, promoters, detractors, recent: HELPDESK_CSAT };
 }
 
-// ── Guest Management ────────────────────────────────────────────────
+// -- Guest Management ------------------------------------------------
 const VISITORS = [
   { id: 'v-201', name: 'John Smith',      company: 'Acme',   host: 'Alice (F12)', purpose: 'Meeting',     status: 'in_building', escortRequired: false, checkInAt: '2026-04-20T08:10:00Z', expectedOutAt: '2026-04-20T12:00:00Z', badge: 'V-001' },
   { id: 'v-202', name: 'Maria Lopez',     company: 'Globex', host: 'Bob (F7)',    purpose: 'Interview',   status: 'in_building', escortRequired: true,  checkInAt: '2026-04-20T08:24:00Z', expectedOutAt: '2026-04-20T11:00:00Z', badge: 'V-002' },
@@ -2829,12 +2844,12 @@ function guestPasses() {
   };
 }
 
-// ── Smart Parking & EV Charging ─────────────────────────────────────
+// -- Smart Parking & EV Charging -------------------------------------
 const PARKING_ZONES = [
-  { id: 'P1', name: 'Basement 1 — Visitor', total: 180, occupied: 132, ev: 12, evOccupied: 9 },
-  { id: 'P2', name: 'Basement 2 — Tenant',  total: 220, occupied: 168, ev: 16, evOccupied: 11 },
-  { id: 'P3', name: 'Basement 3 — Tenant',  total: 200, occupied: 121, ev: 12, evOccupied: 7 },
-  { id: 'P4', name: 'Outdoor — Visitor',    total: 150, occupied:  91, ev:  6, evOccupied: 4 },
+  { id: 'P1', name: 'Basement 1 � Visitor', total: 180, occupied: 132, ev: 12, evOccupied: 9 },
+  { id: 'P2', name: 'Basement 2 � Tenant',  total: 220, occupied: 168, ev: 16, evOccupied: 11 },
+  { id: 'P3', name: 'Basement 3 � Tenant',  total: 200, occupied: 121, ev: 12, evOccupied: 7 },
+  { id: 'P4', name: 'Outdoor � Visitor',    total: 150, occupied:  91, ev:  6, evOccupied: 4 },
 ];
 const EV_SESSIONS = [
   { id: 'ev-1', plate: 'B 1234 AB', zone: 'P1', startedAt: '2026-04-20T07:30:00Z', endedAt: '2026-04-20T08:50:00Z', kwh: 28.4, fee: 6.82 },
@@ -2870,10 +2885,10 @@ function parkingSummary() {
   const revenue = Math.round((parkingFees + evFees) * 100) / 100;
   return {
     kpis: {
-      occupancy:    { value: occupancyPct, unit: '%', occupied, total, formula: '(occupiedSlots / totalSlots) × 100' },
+      occupancy:    { value: occupancyPct, unit: '%', occupied, total, formula: '(occupiedSlots / totalSlots) � 100' },
       evSessions:   { value: evSessions,   deltaAbs: 12, formula: 'count(EV_SESSIONS WHERE startedAt::date = today)' },
-      anprAccuracy: { value: anprAcc,      unit: '%', windowHours: 24, formula: '(matchedPlates / totalPlateReads) × 100' },
-      revenueToday: { value: revenue,      currency: 'USD', deltaPct: 18, formula: 'Σ(parkingFees) + Σ(evChargingFees)' },
+      anprAccuracy: { value: anprAcc,      unit: '%', windowHours: 24, formula: '(matchedPlates / totalPlateReads) � 100' },
+      revenueToday: { value: revenue,      currency: 'USD', deltaPct: 18, formula: 'S(parkingFees) + S(evChargingFees)' },
     },
     breakdown: { parkingFees, evFees },
   };
@@ -2900,7 +2915,7 @@ function parkingRevenue() {
   return { ...sum.breakdown, total: sum.kpis.revenueToday.value, currency: 'USD' };
 }
 
-// ── Room Booking Engine ─────────────────────────────────────────────
+// -- Room Booking Engine ---------------------------------------------
 const MEETING_ROOMS = [
   { id: 'R-2A', name: 'Boardroom 2A', floor: 2,  capacity: 18, hvacKwhPerHour: 4.2 },
   { id: 'R-3B', name: 'Huddle 3B',    floor: 3,  capacity:  6, hvacKwhPerHour: 1.8 },
@@ -2944,7 +2959,7 @@ function bookingSummary() {
   const bookingsToday = todays.length;
   const noShows = todays.filter(b => b.status === 'no_show').length;
   const noShowsPct = bookingsToday ? Math.round((noShows / bookingsToday) * 1000) / 10 : 0;
-  // Utilization = bookedMinutes / availableMinutes (08:00–18:00 = 600 min × roomCount)
+  // Utilization = bookedMinutes / availableMinutes (08:00�18:00 = 600 min � roomCount)
   const businessMin = 10 * 60;
   const availableMin = MEETING_ROOMS.length * businessMin;
   const bookedMin = todays.reduce((s, b) => s + (new Date(b.endAt) - new Date(b.startAt)) / 60000, 0);
@@ -2953,9 +2968,9 @@ function bookingSummary() {
   return {
     kpis: {
       bookingsToday:      { value: bookingsToday, deltaPct: 18, formula: 'count(BOOKINGS WHERE startAt::date = today)' },
-      utilizationPct:     { value: utilizationPct, unit: '%', deltaPts: 5, formula: 'Σ(bookedMinutes) / Σ(availableMinutes) × 100  (08–18)' },
-      noShowsPct:         { value: noShowsPct, unit: '%', deltaPct: -1.1, formula: 'noShowCount / bookingsToday × 100' },
-      hvacEnergySavedKwh: { value: hvac.totalSavedKwh, unit: 'kWh', label: 'today', formula: 'Σ(preCool/preHeat avoided baseline kWh) today' },
+      utilizationPct:     { value: utilizationPct, unit: '%', deltaPts: 5, formula: 'S(bookedMinutes) / S(availableMinutes) � 100  (08�18)' },
+      noShowsPct:         { value: noShowsPct, unit: '%', deltaPct: -1.1, formula: 'noShowCount / bookingsToday � 100' },
+      hvacEnergySavedKwh: { value: hvac.totalSavedKwh, unit: 'kWh', label: 'today', formula: 'S(preCool/preHeat avoided baseline kWh) today' },
     },
     available: { rooms: MEETING_ROOMS.length, businessMin },
   };
@@ -2986,10 +3001,10 @@ function bookingNoShows() {
 }
 
 // =============================================================================
-// Housekeeping / Guest Services / Data Center Cooling — mock data + helpers
+// Housekeeping / Guest Services / Data Center Cooling � mock data + helpers
 // =============================================================================
 
-// ── Housekeeping ────────────────────────────────────────────────────
+// -- Housekeeping ----------------------------------------------------
 const HK_ATTENDANTS = [
   { id: 'hk-1', name: 'Maria S.',   shift: 'AM', floor: 12, capacity: 6 },
   { id: 'hk-2', name: 'John D.',    shift: 'AM', floor: 12, capacity: 6 },
@@ -3058,9 +3073,9 @@ function housekeepingSummary() {
   return {
     kpis: {
       roomsToClean:      { value: todo.length, priorityCount: priority, formula: "count(WHERE status IN ('todo','in_progress'))" },
-      avgCleanMin:       { value: avgClean, unit: 'min', onTarget: avgClean <= 25, target: 25, formula: 'avg(completedAt − assignedAt) over CLEAN_TASKS today' },
+      avgCleanMin:       { value: avgClean, unit: 'min', onTarget: avgClean <= 25, target: 25, formula: 'avg(completedAt - assignedAt) over CLEAN_TASKS today' },
       activeAttendants:  { value: activeAttendants, allAssigned: activeAttendants >= 14, formula: 'count(distinct attendant) on assigned tasks today' },
-      inspectionPassPct: { value: passPct, unit: '%', deltaPct: 2, formula: '(inspectionsPassed / inspectionsTotal) × 100, 7d' },
+      inspectionPassPct: { value: passPct, unit: '%', deltaPct: 2, formula: '(inspectionsPassed / inspectionsTotal) � 100, 7d' },
     },
   };
 }
@@ -3097,7 +3112,7 @@ function housekeepingInspections() {
   return { total, pass, fail, passPct: Math.round((pass / total) * 1000) / 10, topReasons, items: HK_INSPECTIONS };
 }
 
-// ── Guest Services ──────────────────────────────────────────────────
+// -- Guest Services --------------------------------------------------
 const GS_REQUESTS = [
   { id: 'gr-1',  roomId: 'R1201', guest: 'Guest 1201', type: 'concierge', summary: 'Late check-out 14:00',  priority: 'medium', status: 'open',         openedAt: '2026-04-20T08:10:00Z', firstResponseAt: '2026-04-20T08:13:00Z', closedAt: null,                         assignee: 'Front Desk' },
   { id: 'gr-2',  roomId: 'R1205', guest: 'Guest 1205', type: 'in_room',   summary: 'Extra towels',          priority: 'low',    status: 'in_progress',  openedAt: '2026-04-20T08:22:00Z', firstResponseAt: '2026-04-20T08:25:00Z', closedAt: null,                         assignee: 'HK Team' },
@@ -3138,7 +3153,7 @@ function guestServicesSummary() {
   return {
     kpis: {
       openRequests:      { value: open.length, deltaPct: -3, formula: "count(GUEST_REQUESTS WHERE status IN ('open','in_progress'))" },
-      avgResponseMin:    { value: avgResp, unit: 'min', inSla: avgResp <= 5, formula: 'avg(firstResponseAt − openedAt) over today' },
+      avgResponseMin:    { value: avgResp, unit: 'min', inSla: avgResp <= 5, formula: 'avg(firstResponseAt - openedAt) over today' },
       fnbOrdersToday:    { value: fnbToday, deltaPct: 18, sample: fnb, formula: 'count(FNB_ORDERS WHERE placedAt::date = today)' },
       guestCsat:         { value: csat, scale: 5, deltaPts: 0.1, formula: 'avg(rating) on 1..5 scale, 30d' },
     },
@@ -3169,7 +3184,7 @@ function guestServicesCsat() {
   return { avg, scale: 5, total, recent: GS_RATINGS.map((r, i) => ({ day: `D-${total - i}`, rating: r })) };
 }
 
-// ── Data Center · Cooling & PUE ─────────────────────────────────────
+// -- Data Center � Cooling & PUE -------------------------------------
 const CRAC_UNITS = [
   { id: 'CRAC-01', zone: 'A', supplyTempC: 18.2, returnTempC: 26.4, fanSpeedPct: 62, status: 'green', activeKw: 14.2 },
   { id: 'CRAC-02', zone: 'A', supplyTempC: 18.0, returnTempC: 26.1, fanSpeedPct: 60, status: 'green', activeKw: 13.8 },
@@ -3220,10 +3235,10 @@ function coolingSummary() {
   const aisle = Math.round((COLD_AISLE_SENSORS.reduce((s, a) => s + a.tempC, 0) / COLD_AISLE_SENSORS.length) * 10) / 10;
   return {
     kpis: {
-      pue:           { value: last.pue, target: 1.4, withinTarget: last.pue <= 1.4, avg24h: avgPue, formula: 'totalFacilityKw / itLoadKw  (target ≤ 1.4)' },
+      pue:           { value: last.pue, target: 1.4, withinTarget: last.pue <= 1.4, avg24h: avgPue, formula: 'totalFacilityKw / itLoadKw  (target = 1.4)' },
       cracUnits:     { value: cracGreen, total: cracTotal, allGreen: cracGreen === cracTotal, formula: "count(CRAC WHERE status='green')" },
-      chilledWaterDt:{ value: dT, unit: '°C', optimal: dT >= 6 && dT <= 10, target: '6–10 °C', formula: 'avg(returnTempC − supplyTempC) across loops' },
-      coldAisleAvg:  { value: aisle, unit: '°C', withinBand: aisle >= 18 && aisle <= 24, band: '18–24 °C (ASHRAE A1)', formula: 'avg(coldAisleSensors)' },
+      chilledWaterDt:{ value: dT, unit: '�C', optimal: dT >= 6 && dT <= 10, target: '6�10 �C', formula: 'avg(returnTempC - supplyTempC) across loops' },
+      coldAisleAvg:  { value: aisle, unit: '�C', withinBand: aisle >= 18 && aisle <= 24, band: '18�24 �C (ASHRAE A1)', formula: 'avg(coldAisleSensors)' },
     },
     snapshot: { itKw: last.itKw, facilityKw: last.facilityKw },
   };
@@ -3276,27 +3291,27 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log('');
-  console.log('╔════════════════════════════════════════════════════════════════════════════╗');
-  console.log('║              INTEGRA — Total Building Resource Dashboard                   ║');
-  console.log('╠════════════════════════════════════════════════════════════════════════════╣');
-  console.log(`║  API:     http://localhost:${PORT}                                              ║`);
-  console.log(`║  Health:  http://localhost:${PORT}/api/v1/health                                 ║`);
-  console.log('╠════════════════════════════════════════════════════════════════════════════╣');
-  console.log('║  Buildings (9 total — 3 per type):                                         ║');
-  console.log('║  🏢 Data Center : DC Cikarang · DC Cibitung · DC Sentul                   ║');
-  console.log('║  🏬 Office      : Sudirman Tower · Kuningan Park · BSD Green               ║');
-  console.log('║  🏨 Hospitality : Nusa Dua Resort · Ubud Retreat · Jakarta City Hotel      ║');
-  console.log('╠════════════════════════════════════════════════════════════════════════════╣');
-  console.log('║  Demo Accounts (email / password → role):                                  ║');
-  console.log('║   admin@integra.com       / admin123    → sys_admin (ALL buildings)        ║');
-  console.log('║   cfo@integra.com         / cfo123      → financial  (DC Cikarang)         ║');
-  console.log('║   tech@integra.com        / tech123     → technician (DC Cikarang)         ║');
-  console.log('║   tech-office@integra.com / tech123     → technician (Sudirman Tower)      ║');
-  console.log('║   tech-hotel@integra.com  / tech123     → technician (Nusa Dua Resort)     ║');
-  console.log('║   manager@integra.com     / manager123  → bldg_mgr   (DC Cikarang)         ║');
-  console.log('║   security@integra.com    / security123 → security   (DC Cikarang)         ║');
-  console.log('║   tenant@integra.com      / tenant123   → tenant     (Sudirman Tower)      ║');
-  console.log('║   guest@integra.com       / guest123    → guest      (Nusa Dua Resort)     ║');
-  console.log('╚════════════════════════════════════════════════════════════════════════════╝');
+  console.log('+----------------------------------------------------------------------------+');
+  console.log('�              INTEGRA � Total Building Resource Dashboard                   �');
+  console.log('�----------------------------------------------------------------------------�');
+  console.log(`�  API:     http://localhost:${PORT}                                              �`);
+  console.log(`�  Health:  http://localhost:${PORT}/api/v1/health                                 �`);
+  console.log('�----------------------------------------------------------------------------�');
+  console.log('�  Buildings (9 total � 3 per type):                                         �');
+  console.log('�  ?? Data Center : DC Cikarang � DC Cibitung � DC Sentul                   �');
+  console.log('�  ?? Office      : Sudirman Tower � Kuningan Park � BSD Green               �');
+  console.log('�  ?? Hospitality : Nusa Dua Resort � Ubud Retreat � Jakarta City Hotel      �');
+  console.log('�----------------------------------------------------------------------------�');
+  console.log('�  Demo Accounts (email / password ? role):                                  �');
+  console.log('�   admin@integra.com       / admin123    ? sys_admin (ALL buildings)        �');
+  console.log('�   cfo@integra.com         / cfo123      ? financial  (DC Cikarang)         �');
+  console.log('�   tech@integra.com        / tech123     ? technician (DC Cikarang)         �');
+  console.log('�   tech-office@integra.com / tech123     ? technician (Sudirman Tower)      �');
+  console.log('�   tech-hotel@integra.com  / tech123     ? technician (Nusa Dua Resort)     �');
+  console.log('�   manager@integra.com     / manager123  ? bldg_mgr   (DC Cikarang)         �');
+  console.log('�   security@integra.com    / security123 ? security   (DC Cikarang)         �');
+  console.log('�   tenant@integra.com      / tenant123   ? tenant     (Sudirman Tower)      �');
+  console.log('�   guest@integra.com       / guest123    ? guest      (Nusa Dua Resort)     �');
+  console.log('+----------------------------------------------------------------------------+');
   console.log('');
 });
